@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 5,
+    zIndex: 1, // Lower z-index so markers render on top
     opacity: 0.4,
   },
   fogGradient: {
