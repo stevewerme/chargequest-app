@@ -1,17 +1,29 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, Alert, TouchableOpacity } from 'react-native';
 import { BlurView } from 'expo-blur';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
+import Svg, { Defs, Mask, Rect, Circle } from 'react-native-svg';
 import { useGameStore } from '../stores/gameStore';
+import { locationService } from '../services/locationService';
 
 const { width, height } = Dimensions.get('window');
 
-// Töjnan, Sollentuna coordinates (using user-provided precise locations)
-const STOCKHOLM_REGION = {
+// Fallback region for Töjnan area (used when no location available)
+const FALLBACK_REGION = {
   latitude: 59.4235, // Center of user's Töjnan coordinates
   longitude: 17.9342, // Center of user's Töjnan coordinates
-  latitudeDelta: 0.008, // Adjusted to show all stations
-  longitudeDelta: 0.008, // Adjusted to show all stations
+  latitudeDelta: 0.008, // Default neighborhood view
+  longitudeDelta: 0.008, // Default neighborhood view
+};
+
+// Adaptive zoom configuration
+const ZOOM_CONFIG = {
+  MIN_DELTA: 0.002,    // Tightest zoom - street level
+  MAX_DELTA: 0.015,    // Widest zoom - neighborhood view
+  DEFAULT_DELTA: 0.008, // Fallback zoom
+  NEARBY_RADIUS: 500,   // Consider cells within 500m
+  NEARBY_COUNT: 5,      // Use up to 5 nearest cells for zoom calculation
+  UPDATE_THRESHOLD: 100, // Only update region if moved 100m+
 };
 
 // Note: Energy cells now come from the game store
@@ -334,6 +346,7 @@ export default function MapScreen() {
     startLocationTracking,
     startUnlock,
     resetProgress,
+    currentLocation,
     isLoading,
     error,
     locationPermissionGranted 
@@ -341,6 +354,87 @@ export default function MapScreen() {
 
   // Safety check: ensure chargingStations is always an array
   const safeChargingStations = chargingStations || [];
+  
+  // Dynamic map region state
+  const [mapRegion, setMapRegion] = useState<Region>(FALLBACK_REGION);
+  const [lastUpdateLocation, setLastUpdateLocation] = useState<{lat: number, lon: number} | null>(null);
+
+  // MapView reference for coordinate conversions
+  const mapViewRef = useRef<MapView>(null);
+
+  // Convert GPS coordinates to screen pixels for SVG positioning
+  const convertGPSToScreen = (latitude: number, longitude: number) => {
+    // Calculate relative position to current map region center
+    const latDiff = latitude - mapRegion.latitude;
+    const lonDiff = longitude - mapRegion.longitude;
+    
+    // Convert to screen coordinates
+    const screenX = width / 2 + (lonDiff / mapRegion.longitudeDelta) * width;
+    const screenY = height / 2 - (latDiff / mapRegion.latitudeDelta) * height;
+    
+    return { x: screenX, y: screenY };
+  };
+
+  // Calculate 50m radius in screen pixels
+  const getRevealRadius = () => {
+    // 50 meters ≈ ~0.00045 degrees at Sollentuna latitude (59.4°)
+    const metersInDegrees = 0.00045;
+    const radiusInScreenPixels = (metersInDegrees / mapRegion.latitudeDelta) * height;
+    return Math.max(40, Math.min(120, radiusInScreenPixels)); // Clamp between 40-120px
+  };
+
+  // Calculate adaptive zoom based on nearby energy cells
+  const calculateAdaptiveZoom = (userLat: number, userLon: number) => {
+    if (!safeChargingStations.length) return ZOOM_CONFIG.DEFAULT_DELTA;
+
+    // Find nearby stations within radius
+    const nearbyStations = safeChargingStations
+      .map(station => ({
+        ...station,
+        distance: locationService.calculateDistance(userLat, userLon, station.latitude, station.longitude)
+      }))
+      .filter(station => station.distance <= ZOOM_CONFIG.NEARBY_RADIUS)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, ZOOM_CONFIG.NEARBY_COUNT);
+
+    if (nearbyStations.length === 0) return ZOOM_CONFIG.DEFAULT_DELTA;
+
+    // Use the furthest nearby station to determine zoom
+    const furthestDistance = nearbyStations[nearbyStations.length - 1].distance;
+    
+    // Convert distance to zoom level (more distance = wider zoom)
+    let zoomDelta;
+    if (furthestDistance < 100) zoomDelta = ZOOM_CONFIG.MIN_DELTA;      // Very close - tight zoom
+    else if (furthestDistance < 200) zoomDelta = ZOOM_CONFIG.MIN_DELTA * 1.5; // Close - medium-tight
+    else if (furthestDistance < 350) zoomDelta = ZOOM_CONFIG.DEFAULT_DELTA;   // Medium distance
+    else zoomDelta = ZOOM_CONFIG.MAX_DELTA;                            // Far - wide zoom
+
+    // Clamp to min/max limits
+    return Math.max(ZOOM_CONFIG.MIN_DELTA, Math.min(ZOOM_CONFIG.MAX_DELTA, zoomDelta));
+  };
+
+  // Update map region when user location changes significantly  
+  const updateMapRegion = (userLat: number, userLon: number) => {
+    // Check if we should update (moved enough distance)
+    if (lastUpdateLocation) {
+      const distanceMoved = locationService.calculateDistance(
+        lastUpdateLocation.lat, lastUpdateLocation.lon, userLat, userLon
+      );
+      if (distanceMoved < ZOOM_CONFIG.UPDATE_THRESHOLD) return; // Don't update if haven't moved enough
+    }
+
+    const adaptiveZoom = calculateAdaptiveZoom(userLat, userLon);
+    
+    const newRegion: Region = {
+      latitude: userLat,
+      longitude: userLon,
+      latitudeDelta: adaptiveZoom,
+      longitudeDelta: adaptiveZoom,
+    };
+
+    setMapRegion(newRegion);
+    setLastUpdateLocation({ lat: userLat, lon: userLon });
+  };
 
   useEffect(() => {
     initializePermissions();
@@ -351,6 +445,13 @@ export default function MapScreen() {
       startLocationTracking();
     }
   }, [locationPermissionGranted]);
+
+  // Update map region when user location changes
+  useEffect(() => {
+    if (currentLocation && locationPermissionGranted) {
+      updateMapRegion(currentLocation.latitude, currentLocation.longitude);
+    }
+  }, [currentLocation, safeChargingStations.length]); // Also update when stations change (reset)
 
   const handlePermissionError = () => {
     Alert.alert(
@@ -408,8 +509,9 @@ export default function MapScreen() {
       {/* Map with fog-of-war styling and opacity */}
       <View style={styles.mapContainer}>
         <MapView
+          ref={mapViewRef}
           style={styles.map}
-          initialRegion={STOCKHOLM_REGION}
+          region={mapRegion}
           customMapStyle={mapStyle}
           showsUserLocation={locationPermissionGranted}
           showsMyLocationButton={false}
@@ -441,7 +543,7 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-      {/* Atmospheric fog overlay - non-interactive */}
+      {/* Dynamic fog overlay with reveals around discovered stations */}
       <BlurView 
         intensity={12} 
         style={styles.fogOverlay} 
@@ -449,6 +551,43 @@ export default function MapScreen() {
         pointerEvents="none"
       >
         <View style={styles.fogGradient} />
+        
+        {/* SVG Mask for discovered station reveals */}
+        <Svg style={StyleSheet.absoluteFill}>
+          <Defs>
+            <Mask id="fogRevealMask">
+              {/* White background = fog visible */}
+              <Rect width="100%" height="100%" fill="white" />
+              
+              {/* Black circles = transparent holes around discovered stations */}
+              {safeChargingStations
+                .filter(station => station.isDiscovered)
+                .map(station => {
+                  const screenPos = convertGPSToScreen(station.latitude, station.longitude);
+                  const radius = getRevealRadius();
+                  
+                  return (
+                    <Circle
+                      key={`reveal-${station.id}`}
+                      cx={screenPos.x}
+                      cy={screenPos.y}
+                      r={radius}
+                      fill="black" // Black = transparent in mask
+                    />
+                  );
+                })
+              }
+            </Mask>
+          </Defs>
+          
+          {/* Apply the mask to create fog with holes */}
+          <Rect 
+            width="100%" 
+            height="100%" 
+            fill="rgba(5, 15, 25, 0.6)" // Dark fog color
+            mask="url(#fogRevealMask)" 
+          />
+        </Svg>
       </BlurView>
 
       {/* Additional mystery vignette */}
