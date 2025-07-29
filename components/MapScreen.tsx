@@ -828,6 +828,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 2, // Above map (1), below UI elements (1000)
     pointerEvents: 'none', // Completely non-interactive
-    backgroundColor: 'rgba(5, 15, 25, 0.08)', // Simple solid overlay
+    backgroundColor: 'rgba(5, 15, 25, 0.15)', // Slightly more visible atmospheric effect
   },
 }); 
