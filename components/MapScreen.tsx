@@ -1,11 +1,199 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, Alert, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
-import Svg, { Defs, Mask, Rect, Circle, RadialGradient, Stop } from 'react-native-svg';
 import { useGameStore } from '../stores/gameStore';
 import { locationService } from '../services/locationService';
 
 const { width, height } = Dimensions.get('window');
+
+// Exact recreation of user's reference character
+const PixelArtCharacter = () => {
+  return (
+    <View style={styles.pixelCharacter}>
+      {/* Row 1 - Hair top with outline */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 2 - Hair outline and brown */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 3 - More hair */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 4 - Forehead */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 5 - Eyes */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 6 - Nose/mouth */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 7 - Shirt top */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 8 - Shirt middle */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 9 - Arms/shirt */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 10 - Shirt bottom */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelTealDark]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelTealLight]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelTealDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 11 - Pants top */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelTealLight]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelTealLight]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 12 - Pants middle */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelTealDark]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelTealDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 13 - Pants bottom */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelTealLight]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelTealLight]} />
+        <View style={[styles.pixel, styles.pixelTeal]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 14 - Shoes */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+    </View>
+  );
+};
 
 // Fallback region for Töjnan area (used when no location available)
 const FALLBACK_REGION = {
@@ -32,7 +220,7 @@ const mapStyle = [
     "elementType": "geometry",
     "stylers": [
       {
-        "color": "#1a1a1a"
+        "color": "#0a0a0a" // Much darker for mysterious exploration feel
       }
     ]
   },
@@ -208,14 +396,13 @@ function AnimatedEnergyCell({
   onUnlock 
 }: AnimatedEnergyCellProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!isDiscovered && !isUnlocking) {
       const pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.4,
+            toValue: 1.2,
             duration: 1500,
             useNativeDriver: true,
           }),
@@ -232,107 +419,138 @@ function AnimatedEnergyCell({
     }
   }, [isDiscovered, isUnlocking]);
 
-  useEffect(() => {
-    if (isDiscoverable && !isUnlocking) {
-      const glowAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1.8,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      glowAnimation.start();
-
-      return () => glowAnimation.stop();
-    }
-  }, [isDiscoverable, isUnlocking]);
-
   const handlePress = () => {
     if (isDiscoverable && !isUnlocking && !isDiscovered) {
       onUnlock(stationId);
     }
   };
 
-  const getEnergyColors = () => {
-    if (isDiscovered) return { core: '#0088ff', glow: '#0088ff' };
-    if (isDiscoverable) return { core: '#ffaa00', glow: '#ffaa00' };
-    return { core: '#00ff88', glow: '#00ff88' };
+  const getCrystalColors = () => {
+    if (isDiscovered) return { base: '#0088ff', light: '#00aaff', dark: '#0066cc' };
+    if (isDiscoverable) return { base: '#ffdd00', light: '#ffff44', dark: '#ffaa00' }; // Much brighter yellow
+    return { base: '#00ff88', light: '#33ffaa', dark: '#00cc66' };
   };
 
-  const colors = getEnergyColors();
+  const colors = getCrystalColors();
 
   return (
-    <TouchableOpacity 
-      style={styles.energyCell} 
-      onPress={handlePress}
-      disabled={!isDiscoverable || isUnlocking || isDiscovered}
-      activeOpacity={0.8}
-    >
-      <View style={[
-        styles.energyCellOuterGlow, 
-        { shadowColor: colors.glow },
-        isDiscovered && styles.discoveredOuterGlow
-      ]} />
-      <Animated.View style={[
-        styles.energyCellGlow, 
-        { 
-          shadowColor: colors.glow,
-          transform: isDiscoverable ? [{ scale: glowAnim }] : undefined
-        },
-        isDiscovered && styles.discoveredGlow
-      ]} />
-      <View style={[
-        styles.energyCellCore, 
-        { 
-          backgroundColor: colors.core,
-          shadowColor: colors.core 
-        },
-        isDiscovered && styles.discoveredCore
-      ]} />
+    <TouchableOpacity onPress={handlePress} style={styles.energyCell}>
+      {/* Enhanced discoverable glow effect */}
+      {isDiscoverable && !isDiscovered && (
+        <View style={[
+          styles.discoverableGlow,
+          { transform: [{ scale: pulseAnim }] }
+        ]} />
+      )}
       
-      {/* Pulse animation for undiscovered stations */}
-      {!isDiscovered && !isDiscoverable && (
-        <Animated.View 
-          style={[
-            styles.energyCellPulse,
-            {
-              borderColor: colors.core,
-              transform: [{ scale: pulseAnim }],
-            }
-          ]} 
-        />
-      )}
-
-      {/* Unlock progress indicator */}
-      {isUnlocking && (
-        <View style={styles.unlockProgress}>
-          <View 
-            style={[
-              styles.progressBar,
-              { width: `${unlockProgress}%` }
-            ]} 
-          />
+      <Animated.View style={[
+        styles.pixelCrystal,
+        { transform: [{ scale: pulseAnim }] }
+      ]}>
+        {/* High-res Pixel Art Crystal matching character resolution */}
+        
+        {/* Row 1 - Top point with outline */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
         </View>
-      )}
-
-      {/* Discovered indicator */}
-      {isDiscovered && (
-        <View style={styles.discoveredIndicator} />
-      )}
-
-      {/* Discoverable tap hint */}
-      {isDiscoverable && !isUnlocking && (
-        <View style={styles.tapHint}>
-          <Text style={styles.tapHintText}>TAP</Text>
+        
+        {/* Row 2 - Upper outline */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
         </View>
-      )}
+        
+        {/* Row 3 - Upper crystal */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+        </View>
+        
+        {/* Row 4 - Middle crystal */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+        </View>
+        
+        {/* Row 5 - Lower crystal */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+        </View>
+        
+        {/* Row 6 - Lower outline */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+        </View>
+        
+        {/* Row 7 - Bottom point */}
+        <View style={styles.crystalRow}>
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+        </View>
+        
+        {/* High-res Progress Bar */}
+        {isUnlocking && (
+          <View style={styles.pixelProgressContainer}>
+            {/* Pixel-style progress bar with outline */}
+            <View style={styles.pixelProgressOutline}>
+              <View style={styles.pixelProgressBar}>
+                <View 
+                  style={[
+                    styles.pixelProgressFill, 
+                    { width: `${unlockProgress * 100}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+            <View style={styles.pixelTapHint}>
+              <Text style={styles.pixelTapText}>TAP</Text>
+            </View>
+          </View>
+        )}
+        
+        {/* Discovered indicator */}
+        {isDiscovered && (
+          <View style={styles.pixelDiscoveredIndicator} />
+        )}
+      </Animated.View>
     </TouchableOpacity>
   );
 }
@@ -361,42 +579,9 @@ export default function MapScreen() {
   // MapView reference for coordinate conversions
   const mapViewRef = useRef<MapView>(null);
 
-  // Stable screen coordinates for fog reveals (prevents drift bug)
-  const [revealScreenCoords, setRevealScreenCoords] = useState<{[stationId: string]: {x: number, y: number, radius: number}}>({});
-
-  // Update reveal coordinates using MapView's built-in coordinate conversion
-  const updateRevealCoordinates = async () => {
-    if (!mapViewRef.current) return;
-    
-    const discoveredStations = safeChargingStations.filter(s => s.isDiscovered);
-    if (discoveredStations.length === 0) {
-      setRevealScreenCoords({});
-      return;
-    }
-    
-    const newCoords: {[stationId: string]: {x: number, y: number, radius: number}} = {};
-    
-    for (const station of discoveredStations) {
-      try {
-        // Use MapView's built-in coordinate conversion - this prevents drift!
-        const point = await mapViewRef.current.pointForCoordinate({
-          latitude: station.latitude,
-          longitude: station.longitude
-        });
-        
-        if (point && !isNaN(point.x) && !isNaN(point.y)) {
-          newCoords[station.id] = {
-            x: point.x,
-            y: point.y, 
-            radius: 60 // Fixed 60px radius for consistent reveals
-          };
-        }
-      } catch (error) {
-        console.warn('Failed to convert coordinates for station:', station.id);
-      }
-    }
-    
-    setRevealScreenCoords(newCoords);
+  // Get discovered stations for reveals  
+  const getDiscoveredStations = () => {
+    return safeChargingStations.filter(s => s.isDiscovered);
   };
 
   // Calculate adaptive zoom based on nearby energy cells
@@ -469,15 +654,6 @@ export default function MapScreen() {
     }
   }, [currentLocation, safeChargingStations.length]); // Also update when stations change (reset)
 
-  // Update fog reveal coordinates when stations are discovered
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      updateRevealCoordinates();
-    }, 200); // Small delay to ensure map is ready
-    
-    return () => clearTimeout(timer);
-  }, [safeChargingStations.filter(s => s.isDiscovered).length]); // Only when discovery count changes
-
   const handlePermissionError = () => {
     Alert.alert(
       'Location Permission Required',
@@ -504,6 +680,18 @@ export default function MapScreen() {
     );
   };
 
+  const handleCenterOnUser = () => {
+    if (currentLocation) {
+      const newRegion = {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        latitudeDelta: 0.008,
+        longitudeDelta: 0.008,
+      };
+      setMapRegion(newRegion);
+    }
+  };
+
   if (error && !locationPermissionGranted) {
     handlePermissionError();
   }
@@ -518,10 +706,22 @@ export default function MapScreen() {
         </Text>
         <Text style={styles.privacyText}>🇪🇺 Privacy-First • Apple Maps</Text>
         
-        {/* Temporary Reset Button for Development */}
-        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-          <Text style={styles.resetButtonText}>🔄 Reset Progress</Text>
-        </TouchableOpacity>
+        {/* Pixel art buttons */}
+        <View style={styles.buttonRow}>
+          {/* Reset Progress Button */}
+          <TouchableOpacity style={styles.pixelButton} onPress={handleReset}>
+            <View style={styles.pixelButtonBorder}>
+              <Text style={styles.pixelButtonText}>🔄 RESET</Text>
+            </View>
+          </TouchableOpacity>
+          
+          {/* Center on User Button */}
+          <TouchableOpacity style={styles.pixelButton} onPress={handleCenterOnUser}>
+            <View style={styles.pixelButtonBorder}>
+              <Text style={styles.pixelButtonText}>📍 CENTER</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
         
         {isLoading && (
           <Text style={styles.statusText}>Initializing...</Text>
@@ -538,11 +738,25 @@ export default function MapScreen() {
           style={styles.map}
           region={mapRegion}
           customMapStyle={mapStyle}
-          showsUserLocation={locationPermissionGranted}
+          showsUserLocation={false} // Disable default blue dot for custom character
           showsMyLocationButton={false}
           showsCompass={false}
           toolbarEnabled={false}
         >
+          {/* Custom 8-bit player character */}
+          {currentLocation && locationPermissionGranted && (
+            <Marker
+              coordinate={{
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude
+              }}
+              anchor={{ x: 0.5, y: 0.5 }}
+              flat={true}
+            >
+              <PixelArtCharacter />
+            </Marker>
+          )}
+
           {safeChargingStations.map((station) => (
             <Marker
               key={station.id}
@@ -565,38 +779,14 @@ export default function MapScreen() {
               />
             </Marker>
           ))}
+
+          
         </MapView>
       </View>
 
-      {/* Simple SVG fog with user location exclusion */}
+      {/* Simple fog overlay - basic atmospheric dimming */}
       <View style={styles.fogOverlay} pointerEvents="none">
-        <Svg style={StyleSheet.absoluteFill}>
-          <Defs>
-            <Mask id="simpleFogMask">
-              {/* White background = fog visible */}
-              <Rect width="100%" height="100%" fill="white" />
-              
-              {/* Black circles around discovered stations only */}
-              {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
-                <Circle
-                  key={`exclude-${stationId}`}
-                  cx={coords.x}
-                  cy={coords.y}
-                  r={coords.radius}
-                  fill="black"
-                />
-              ))}
-            </Mask>
-          </Defs>
-          
-          {/* Simple solid fog with exclusions */}
-          <Rect 
-            width="100%" 
-            height="100%" 
-            fill="rgba(5, 15, 25, 0.2)" 
-            mask="url(#simpleFogMask)" 
-          />
-        </Svg>
+        <View style={styles.baseFog} />
       </View>
 
       {/* Additional mystery vignette */}
@@ -654,50 +844,76 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'transparent',
   },
-  energyCellOuterGlow: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: '#00ff88',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 25,
-    opacity: 0.1,
+  pixelCrystal: {
+    width: 24, // 8 pixels wide * 3px each (slightly bigger for better visibility)
+    height: 24, // 8 pixels tall * 3px each
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  energyCellGlow: {
-    position: 'absolute',
-    width: 25,
-    height: 25,
-    borderRadius: 12.5,
-    backgroundColor: 'transparent',
-    shadowColor: '#00ff88',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 15,
-    opacity: 0.4,
+  crystalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
   },
-  energyCellCore: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#00ff88',
-    shadowColor: '#00ff88',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    zIndex: 10,
+  crystalPixel: {
+    width: 3, // Same 3px pixel size as character
+    height: 3,
+    borderRadius: 0.5, // Same border radius as character
   },
-  energyCellPulse: {
-    position: 'absolute',
-    width: 15,
-    height: 15,
-    borderRadius: 7.5,
+  crystalTransparent: {
     backgroundColor: 'transparent',
+  },
+  pixelProgressContainer: {
+    position: 'absolute',
+    bottom: 2, // Inside the crystal area, clearly visible
+    left: -2, // Slightly wider than crystal for better visibility
+    right: -2,
+    height: 8, // Keep the increased height for visibility
+    alignItems: 'center',
+  },
+  pixelProgressOutline: {
+    width: '100%', // Full width within the container
+    height: '100%',
+    backgroundColor: '#000000', // Black outline like character
+    padding: 1, // 1px border
+    borderRadius: 2,
+    justifyContent: 'center',
+  },
+  pixelProgressBar: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#444444', // Darker background for better contrast
+    borderRadius: 1,
+  },
+  pixelProgressFill: {
+    height: '100%',
+    backgroundColor: '#ffdd00', // Bright yellow like discoverable crystals
+    borderRadius: 1,
+  },
+  pixelTapHint: {
+    position: 'absolute',
+    bottom: 12, // Above the progress bar, inside crystal area
+    alignSelf: 'center',
+    backgroundColor: '#ffdd00', // Bright yellow background
+    paddingHorizontal: 6, // Increased padding
+    paddingVertical: 3,
+    borderRadius: 2,
     borderWidth: 1,
-    borderColor: '#00ff88',
-    opacity: 0.6,
+    borderColor: '#000000', // Black border for definition
+  },
+  pixelTapText: {
+    color: '#000000', // Black text on bright yellow
+    fontSize: 12, // Increased font size
+    fontWeight: 'bold',
+  },
+  pixelDiscoveredIndicator: {
+    position: 'absolute',
+    width: 3, // Match 3px pixel size
+    height: 3,
+    borderRadius: 0.5,
+    backgroundColor: '#ffffff',
+    top: 10, // Adjust position for bigger crystal size
+    opacity: 1,
   },
   fogOverlay: {
     position: 'absolute',
@@ -821,5 +1037,137 @@ const styles = StyleSheet.create({
     zIndex: 2, // Above map (1), below UI elements (1000)
     pointerEvents: 'none', // Completely non-interactive
     backgroundColor: 'rgba(5, 15, 25, 0.2)', // Reasonable atmospheric effect
+  },
+  // Clean Pixel Art Character
+  pixelCharacter: {
+    width: 27, // 9 pixels wide * 3px each
+    height: 42, // 14 pixels tall * 3px each  
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  characterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  pixel: {
+    width: 3, // Smaller pixels for higher resolution
+    height: 3,
+    borderRadius: 0.5,
+  },
+  transparent: {
+    backgroundColor: 'transparent',
+  },
+  green: {
+    backgroundColor: '#00ff88',
+  },
+  lightGreen: {
+    backgroundColor: '#00ffaa',
+  },
+  skin: {
+    backgroundColor: '#ffd700',
+  },
+  black: {
+    backgroundColor: '#000000',
+  },
+  brown: {
+    backgroundColor: '#8b4513',
+  },
+  lightBrown: {
+    backgroundColor: '#deb887',
+  },
+  blue: {
+    backgroundColor: '#0077ff',
+  },
+  lightBlue: {
+    backgroundColor: '#00aaff',
+  },
+  darkBlue: {
+    backgroundColor: '#0055cc',
+  },
+  darkSkin: {
+    backgroundColor: '#ffc107',
+  },
+  pixelRed: {
+    backgroundColor: '#ff4444',
+  },
+  pixelRedLight: {
+    backgroundColor: '#ff6666',
+  },
+  pixelTeal: {
+    backgroundColor: '#008888',
+  },
+  pixelTealLight: {
+    backgroundColor: '#00aaaa',
+  },
+  pixelBlack: {
+    backgroundColor: '#000000',
+  },
+  pixelSkinDark: {
+    backgroundColor: '#ffd700',
+  },
+  pixelBrown: {
+    backgroundColor: '#8B4513',
+  },
+  pixelSkin: {
+    backgroundColor: '#FFDBAC',
+  },
+  pixelOutline: {
+    backgroundColor: '#000000',
+  },
+  pixelSkinLight: {
+    backgroundColor: '#FFDBAC',
+  },
+  pixelRedDark: {
+    backgroundColor: '#cc0000',
+  },
+  pixelTealDark: {
+    backgroundColor: '#005555',
+  },
+  pixelBrownDark: {
+    backgroundColor: '#553300',
+  },
+  pixelBrownLight: {
+    backgroundColor: '#8B4513',
+  },
+  discoverableGlow: {
+    position: 'absolute',
+    width: 24, // Match pixelCrystal size
+    height: 24,
+    borderRadius: 12, // Half of width/height
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white glow
+    opacity: 0.8,
+    zIndex: -1, // Below the crystal itself
+  },
+  baseFog: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(5, 15, 25, 0.2)', // Reasonable atmospheric effect
+  },
+
+  // Pixel art button styles
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  pixelButton: {
+    backgroundColor: 'transparent',
+  },
+  pixelButtonBorder: {
+    backgroundColor: '#000000', // Black background like character
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 2,
+    borderWidth: 1,
+    borderColor: '#ffffff', // White border for definition
+  },
+  pixelButtonText: {
+    color: '#ffffff', // White text on black background
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 }); 
