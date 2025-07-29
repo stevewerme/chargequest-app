@@ -251,7 +251,7 @@ export const useGameStore = create<GameState>()(
         const proximityEvents = locationService.checkProximity(
           currentLocation,
           undiscoveredStations,
-          25 // 25-meter radius
+          500 // 500-meter radius for easy testing (temporarily increased)
         );
 
         // Mark stations as discoverable when in range (not auto-discover)

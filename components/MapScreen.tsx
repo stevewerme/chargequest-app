@@ -415,9 +415,15 @@ function AnimatedEnergyCell({
       );
       pulseAnimation.start();
 
-      return () => pulseAnimation.stop();
+      return () => {
+        pulseAnimation.stop();
+        pulseAnim.setValue(1); // Reset to default scale
+      };
+    } else {
+      // Reset animation when not pulsing
+      pulseAnim.setValue(1);
     }
-  }, [isDiscovered, isUnlocking]);
+  }, [isDiscovered, isUnlocking, pulseAnim]);
 
   const handlePress = () => {
     if (isDiscoverable && !isUnlocking && !isDiscovered) {
@@ -432,98 +438,101 @@ function AnimatedEnergyCell({
   };
 
   const colors = getCrystalColors();
+  
+  // Use conditional pixel sizing for different crystal sizes
+  const pixelStyle = isDiscovered ? styles.crystalPixelDiscovered : styles.crystalPixel;
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.energyCell}>
       {/* Enhanced discoverable glow effect */}
       {isDiscoverable && !isDiscovered && (
-        <View style={[
+        <Animated.View style={[
           styles.discoverableGlow,
           { transform: [{ scale: pulseAnim }] }
         ]} />
       )}
       
       <Animated.View style={[
-        styles.pixelCrystal,
+        isDiscovered ? styles.pixelCrystalDiscovered : styles.pixelCrystal,
         { transform: [{ scale: pulseAnim }] }
       ]}>
         {/* High-res Pixel Art Crystal matching character resolution */}
         
         {/* Row 1 - Top point with outline */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* Row 2 - Upper outline */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.light }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* Row 3 - Upper crystal */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.light }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.base }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.dark }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* Row 4 - Middle crystal */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.light }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.light }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.base }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.base }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.base }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.dark }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
         </View>
         
         {/* Row 5 - Lower crystal */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.base }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.dark }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.base }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.dark }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* Row 6 - Lower outline */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: colors.dark }]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, { backgroundColor: colors.dark }]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* Row 7 - Bottom point */}
         <View style={styles.crystalRow}>
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, { backgroundColor: '#000000' }]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
-          <View style={[styles.crystalPixel, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, { backgroundColor: '#000000' }]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
+          <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
         {/* High-res Progress Bar */}
@@ -845,8 +854,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   pixelCrystal: {
-    width: 24, // 8 pixels wide * 3px each (slightly bigger for better visibility)
-    height: 24, // 8 pixels tall * 3px each
+    width: 21, // 7 pixels wide * 3px each (undiscovered size)
+    height: 21, // 7 pixels tall * 3px each
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pixelCrystalDiscovered: {
+    width: 28, // 7 pixels wide * 4px each (discovered size)  
+    height: 28, // 7 pixels tall * 4px each
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -856,19 +871,24 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   crystalPixel: {
-    width: 3, // Same 3px pixel size as character
+    width: 3, // Same 3px pixel size as character (undiscovered)
     height: 3,
     borderRadius: 0.5, // Same border radius as character
+  },
+  crystalPixelDiscovered: {
+    width: 4, // Bigger 4px pixels for discovered crystals
+    height: 4,
+    borderRadius: 0.5,
   },
   crystalTransparent: {
     backgroundColor: 'transparent',
   },
   pixelProgressContainer: {
     position: 'absolute',
-    bottom: 2, // Inside the crystal area, clearly visible
-    left: -2, // Slightly wider than crystal for better visibility
-    right: -2,
-    height: 8, // Keep the increased height for visibility
+    bottom: -12, // Below the crystal, clearly visible
+    left: -3, // Slightly wider than crystal for better visibility
+    right: -3,
+    height: 8, // Clearly visible progress bar
     alignItems: 'center',
   },
   pixelProgressOutline: {
@@ -892,11 +912,11 @@ const styles = StyleSheet.create({
   },
   pixelTapHint: {
     position: 'absolute',
-    bottom: 12, // Above the progress bar, inside crystal area
+    bottom: -22, // Above the progress bar, below crystal
     alignSelf: 'center',
     backgroundColor: '#ffdd00', // Bright yellow background
-    paddingHorizontal: 6, // Increased padding
-    paddingVertical: 3,
+    paddingHorizontal: 4, // Compact padding
+    paddingVertical: 2,
     borderRadius: 2,
     borderWidth: 1,
     borderColor: '#000000', // Black border for definition
@@ -912,7 +932,7 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 0.5,
     backgroundColor: '#ffffff',
-    top: 10, // Adjust position for bigger crystal size
+    top: 12, // Centered in 28px discovered crystal
     opacity: 1,
   },
   fogOverlay: {
@@ -1132,10 +1152,10 @@ const styles = StyleSheet.create({
   },
   discoverableGlow: {
     position: 'absolute',
-    width: 24, // Match pixelCrystal size
-    height: 24,
-    borderRadius: 12, // Half of width/height
-    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white glow
+    width: 21, // Match undiscovered crystal size
+    height: 21,
+    borderRadius: 10.5, // Half of width/height
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Subtle glow
     opacity: 0.8,
     zIndex: -1, // Below the crystal itself
   },
