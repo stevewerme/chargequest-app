@@ -568,15 +568,14 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-      {/* Pure SVG fog overlay - TEMPORARILY DISABLED FOR DEBUGGING */}
-      {/*
+      {/* Pure SVG fog overlay - subtle atmospheric effect */}
       <View style={styles.fogOverlay} pointerEvents="none">
         <Svg style={StyleSheet.absoluteFill}>
           <Defs>
             <RadialGradient id="atmosphericFog" cx="50%" cy="50%" r="70%">
-              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.1)" />
-              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.2)" />
-              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.3)" />
+              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.05)" />
+              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.08)" />
+              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.12)" />
             </RadialGradient>
             
             <Mask id="fogRevealMask">
@@ -602,7 +601,6 @@ export default function MapScreen() {
           />
         </Svg>
       </View>
-      */}
 
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
