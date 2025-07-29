@@ -251,7 +251,7 @@ export const useGameStore = create<GameState>()(
         const proximityEvents = locationService.checkProximity(
           currentLocation,
           undiscoveredStations,
-          500 // 500-meter radius for easy testing (temporarily increased)
+          25 // 25-meter radius for normal gameplay
         );
 
         // Mark stations as discoverable when in range (not auto-discover)
@@ -313,15 +313,23 @@ export const useGameStore = create<GameState>()(
       },
 
       completeUnlock: (stationId: string) => {
-        // Complete the unlock and discover the station
-        get().discoverStation(stationId);
+        const { chargingStations, discoveredStations } = get();
         
-        // Reset unlock states
-        const { chargingStations } = get();
+        // Prevent duplicate discoveries
+        if (discoveredStations.includes(stationId)) {
+          return;
+        }
+
+        // Update discovered stations list
+        const newDiscoveredStations = [...discoveredStations, stationId];
+        
+        // Complete the unlock and mark as discovered in one atomic update
         const updatedStations = chargingStations.map(station => 
           station.id === stationId
             ? { 
                 ...station, 
+                isDiscovered: true,
+                discoveredAt: new Date(),
                 isUnlocking: false, 
                 unlockProgress: 0,
                 isDiscoverable: false 
@@ -329,7 +337,15 @@ export const useGameStore = create<GameState>()(
             : station
         );
 
-        set({ chargingStations: updatedStations });
+        // Haptic feedback for discovery
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+        // Single atomic state update
+        set({ 
+          chargingStations: updatedStations,
+          discoveredStations: newDiscoveredStations,
+          totalDiscovered: newDiscoveredStations.length,
+        });
       },
 
       resetProgress: () => {

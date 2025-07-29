@@ -535,25 +535,7 @@ function AnimatedEnergyCell({
           <View style={[pixelStyle, styles.crystalTransparent]} />
         </View>
         
-        {/* High-res Progress Bar */}
-        {isUnlocking && (
-          <View style={styles.pixelProgressContainer}>
-            {/* Pixel-style progress bar with outline */}
-            <View style={styles.pixelProgressOutline}>
-              <View style={styles.pixelProgressBar}>
-                <View 
-                  style={[
-                    styles.pixelProgressFill, 
-                    { width: `${unlockProgress * 100}%` }
-                  ]} 
-                />
-              </View>
-            </View>
-            <View style={styles.pixelTapHint}>
-              <Text style={styles.pixelTapText}>CLAIM</Text>
-            </View>
-          </View>
-        )}
+
         
         {/* Discovered indicator */}
         {isDiscovered && (
@@ -793,6 +775,35 @@ export default function MapScreen() {
         </MapView>
       </View>
 
+      {/* Static viewport UI for claiming */}
+      {safeChargingStations.some(s => s.isUnlocking) && (
+        <View style={styles.staticClaimUI} pointerEvents="none">
+          {(() => {
+            const unlockingStation = safeChargingStations.find(s => s.isUnlocking);
+            if (!unlockingStation) return null;
+            
+            return (
+              <>
+                <View style={styles.staticClaimHint}>
+                  <Text style={styles.staticClaimText}>CLAIM</Text>
+                  <Text style={styles.staticLocationText}>{unlockingStation.title}</Text>
+                </View>
+                <View style={styles.staticProgressContainer}>
+                  <View style={styles.staticProgressBar}>
+                    <View 
+                      style={[
+                        styles.staticProgressFill, 
+                        { width: `${unlockingStation.unlockProgress * 100}%` }
+                      ]} 
+                    />
+                  </View>
+                </View>
+              </>
+            );
+          })()}
+        </View>
+      )}
+
       {/* Simple fog overlay - basic atmospheric dimming */}
       <View style={styles.fogOverlay} pointerEvents="none">
         <View style={styles.baseFog} />
@@ -883,49 +894,7 @@ const styles = StyleSheet.create({
   crystalTransparent: {
     backgroundColor: 'transparent',
   },
-  pixelProgressContainer: {
-    position: 'absolute',
-    bottom: -25, // Much further below the crystal
-    left: -5, // Wider than crystal for better visibility
-    right: -5,
-    height: 8, // Clearly visible progress bar
-    alignItems: 'center',
-  },
-  pixelProgressOutline: {
-    width: '100%', // Full width within the container
-    height: '100%',
-    backgroundColor: '#000000', // Black outline like character
-    padding: 1, // 1px border
-    borderRadius: 2,
-    justifyContent: 'center',
-  },
-  pixelProgressBar: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#444444', // Darker background for better contrast
-    borderRadius: 1,
-  },
-  pixelProgressFill: {
-    height: '100%',
-    backgroundColor: '#ffdd00', // Bright yellow like discoverable crystals
-    borderRadius: 1,
-  },
-  pixelTapHint: {
-    position: 'absolute',
-    bottom: -40, // Above the progress bar, well below crystal
-    alignSelf: 'center',
-    backgroundColor: '#ffdd00', // Bright yellow background
-    paddingHorizontal: 6, // More readable padding
-    paddingVertical: 3,
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: '#000000', // Black border for definition
-  },
-  pixelTapText: {
-    color: '#000000', // Black text on bright yellow
-    fontSize: 12, // Increased font size
-    fontWeight: 'bold',
-  },
+
   pixelDiscoveredIndicator: {
     position: 'absolute',
     width: 3, // Match 3px pixel size
@@ -1168,6 +1137,53 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 15, 25, 0.2)', // Reasonable atmospheric effect
   },
 
+  // Static viewport UI styles
+  staticClaimUI: {
+    position: 'absolute',
+    bottom: 50, // Above device UI, clearly visible
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    zIndex: 1000, // Above everything
+  },
+  staticClaimHint: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#ffdd00',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  staticClaimText: {
+    color: '#ffdd00',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  staticLocationText: {
+    color: '#ffffff',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  staticProgressContainer: {
+    width: '100%',
+    height: 12,
+    backgroundColor: '#000000',
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#ffdd00',
+    overflow: 'hidden',
+  },
+  staticProgressBar: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#333333',
+  },
+  staticProgressFill: {
+    height: '100%',
+    backgroundColor: '#ffdd00',
+  },
   // Pixel art button styles
   buttonRow: {
     flexDirection: 'row',
