@@ -362,25 +362,42 @@ export default function MapScreen() {
   // MapView reference for coordinate conversions
   const mapViewRef = useRef<MapView>(null);
 
-  // Convert GPS coordinates to screen pixels for SVG positioning
-  const convertGPSToScreen = (latitude: number, longitude: number) => {
-    // Calculate relative position to current map region center
-    const latDiff = latitude - mapRegion.latitude;
-    const lonDiff = longitude - mapRegion.longitude;
-    
-    // Convert to screen coordinates
-    const screenX = width / 2 + (lonDiff / mapRegion.longitudeDelta) * width;
-    const screenY = height / 2 - (latDiff / mapRegion.latitudeDelta) * height;
-    
-    return { x: screenX, y: screenY };
-  };
+  // Stable screen coordinates for fog reveals (prevents drift bug)
+  const [revealScreenCoords, setRevealScreenCoords] = useState<{[stationId: string]: {x: number, y: number, radius: number}}>({});
 
-  // Calculate 50m radius in screen pixels
-  const getRevealRadius = () => {
-    // 50 meters ≈ ~0.00045 degrees at Sollentuna latitude (59.4°)
-    const metersInDegrees = 0.00045;
-    const radiusInScreenPixels = (metersInDegrees / mapRegion.latitudeDelta) * height;
-    return Math.max(40, Math.min(120, radiusInScreenPixels)); // Clamp between 40-120px
+  // Update reveal coordinates using MapView's built-in coordinate conversion
+  const updateRevealCoordinates = async () => {
+    if (!mapViewRef.current) return;
+    
+    const discoveredStations = safeChargingStations.filter(s => s.isDiscovered);
+    if (discoveredStations.length === 0) {
+      setRevealScreenCoords({});
+      return;
+    }
+    
+    const newCoords: {[stationId: string]: {x: number, y: number, radius: number}} = {};
+    
+    for (const station of discoveredStations) {
+      try {
+        // Use MapView's built-in coordinate conversion - this prevents drift!
+        const point = await mapViewRef.current.pointForCoordinate({
+          latitude: station.latitude,
+          longitude: station.longitude
+        });
+        
+        if (point && !isNaN(point.x) && !isNaN(point.y)) {
+          newCoords[station.id] = {
+            x: point.x,
+            y: point.y, 
+            radius: 60 // Fixed 60px radius for consistent reveals
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to convert coordinates for station:', station.id);
+      }
+    }
+    
+    setRevealScreenCoords(newCoords);
   };
 
   // Calculate adaptive zoom based on nearby energy cells
@@ -452,6 +469,15 @@ export default function MapScreen() {
       updateMapRegion(currentLocation.latitude, currentLocation.longitude);
     }
   }, [currentLocation, safeChargingStations.length]); // Also update when stations change (reset)
+
+  // Update fog reveal coordinates when stations are discovered
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateRevealCoordinates();
+    }, 200); // Small delay to ensure map is ready
+    
+    return () => clearTimeout(timer);
+  }, [safeChargingStations.filter(s => s.isDiscovered).length]); // Only when discovery count changes
 
   const handlePermissionError = () => {
     Alert.alert(
@@ -560,32 +586,15 @@ export default function MapScreen() {
               <Rect width="100%" height="100%" fill="white" />
               
               {/* Black circles = transparent holes around discovered stations */}
-              {safeChargingStations && safeChargingStations.length > 0 && 
-                safeChargingStations
-                  .filter(station => station && station.isDiscovered)
-                  .map(station => {
-                    if (!station.latitude || !station.longitude) return null;
-                    
-                    const screenPos = convertGPSToScreen(station.latitude, station.longitude);
-                    const radius = getRevealRadius();
-                    
-                    // Safety check for valid screen coordinates
-                    if (!screenPos || isNaN(screenPos.x) || isNaN(screenPos.y) || isNaN(radius)) {
-                      return null;
-                    }
-                    
-                    return (
-                      <Circle
-                        key={`reveal-${station.id}`}
-                        cx={screenPos.x}
-                        cy={screenPos.y}
-                        r={radius}
-                        fill="black" // Black = transparent in mask
-                      />
-                    );
-                  })
-                  .filter(Boolean) // Remove any null entries
-              }
+              {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
+                <Circle
+                  key={`reveal-${stationId}`}
+                  cx={coords.x}
+                  cy={coords.y}
+                  r={coords.radius}
+                  fill="black" // Black = transparent in mask
+                />
+              ))}
             </Mask>
           </Defs>
           
