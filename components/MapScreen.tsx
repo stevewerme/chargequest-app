@@ -568,7 +568,8 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-      {/* Pure SVG fog overlay - subtle atmospheric effect */}
+      {/* Fog temporarily disabled - SVG approach has issues */}
+      {/*
       <View style={styles.fogOverlay} pointerEvents="none">
         <Svg style={StyleSheet.absoluteFill}>
           <Defs>
@@ -601,9 +602,13 @@ export default function MapScreen() {
           />
         </Svg>
       </View>
+      */}
 
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
+
+      {/* Simple non-SVG fog test */}
+      <View style={styles.simpleFogOverlay} pointerEvents="none" />
     </View>
   );
 }
@@ -812,5 +817,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+  },
+
+  // Simple non-SVG fog test
+  simpleFogOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2, // Above map (1), below UI elements (1000)
+    pointerEvents: 'none', // Completely non-interactive
+    backgroundColor: 'rgba(5, 15, 25, 0.08)', // Simple solid overlay
   },
 }); 
