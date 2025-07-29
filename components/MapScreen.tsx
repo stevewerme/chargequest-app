@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, Alert, TouchableOpacity } from 'react-native';
-import { BlurView } from 'expo-blur';
 import MapView, { Marker, Region } from 'react-native-maps';
-import Svg, { Defs, Mask, Rect, Circle } from 'react-native-svg';
+import Svg, { Defs, Mask, Rect, Circle, RadialGradient, Stop } from 'react-native-svg';
 import { useGameStore } from '../stores/gameStore';
 import { locationService } from '../services/locationService';
 
@@ -532,7 +531,7 @@ export default function MapScreen() {
         )}
       </View>
 
-      {/* Map with fog-of-war styling and opacity */}
+      {/* Map with pristine native components - no fog interference */}
       <View style={styles.mapContainer}>
         <MapView
           ref={mapViewRef}
@@ -567,45 +566,45 @@ export default function MapScreen() {
             </Marker>
           ))}
         </MapView>
+      </View>
 
-        {/* Dynamic fog overlay with reveals around discovered stations */}
-        <BlurView 
-          intensity={12} 
-          style={styles.fogOverlay} 
-          tint="dark"
-          pointerEvents="none"
-        >
-          <View style={styles.fogGradient} />
-          
-          {/* SVG Mask for discovered station reveals */}
-          <Svg style={StyleSheet.absoluteFill}>
-            <Defs>
-              <Mask id="fogRevealMask">
-                {/* White background = fog visible */}
-                <Rect width="100%" height="100%" fill="white" />
-                
-                {/* Black circles = transparent holes around discovered stations */}
-                {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
-                  <Circle
-                    key={`reveal-${stationId}`}
-                    cx={coords.x}
-                    cy={coords.y}
-                    r={coords.radius}
-                    fill="black" // Black = transparent in mask
-                  />
-                ))}
-              </Mask>
-            </Defs>
+      {/* Pure SVG fog overlay - completely separate from MapView */}
+      <View style={styles.fogOverlay} pointerEvents="none">
+        <Svg style={StyleSheet.absoluteFill}>
+          <Defs>
+            {/* Multi-layered atmospheric fog gradient */}
+            <RadialGradient id="atmosphericFog" cx="50%" cy="50%" r="70%">
+              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.2)" />
+              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.5)" />
+              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.8)" />
+            </RadialGradient>
             
-            {/* Apply the mask to create fog with holes */}
-            <Rect 
-              width="100%" 
-              height="100%" 
-              fill="rgba(5, 15, 25, 0.6)" // Dark fog color
-              mask="url(#fogRevealMask)" 
-            />
-          </Svg>
-        </BlurView>
+            {/* Masking system for discovered station reveals */}
+            <Mask id="fogRevealMask">
+              {/* White background = fog visible */}
+              <Rect width="100%" height="100%" fill="white" />
+              
+              {/* Black circles = transparent holes around discovered stations */}
+              {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
+                <Circle
+                  key={`reveal-${stationId}`}
+                  cx={coords.x}
+                  cy={coords.y}
+                  r={coords.radius}
+                  fill="black" // Black = transparent in mask
+                />
+              ))}
+            </Mask>
+          </Defs>
+          
+          {/* Apply atmospheric fog with reveals */}
+          <Rect 
+            width="100%" 
+            height="100%" 
+            fill="url(#atmosphericFog)" 
+            mask="url(#fogRevealMask)" 
+          />
+        </Svg>
       </View>
 
       {/* Additional mystery vignette */}
@@ -650,7 +649,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
-    opacity: 0.7,
+    zIndex: 1, // Base layer for proper fog overlay positioning
   },
   map: {
     width: width,
@@ -714,13 +713,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: -1, // Negative z-index to ensure it renders behind map markers
-    opacity: 0.4,
-    pointerEvents: 'none', // Ensure it doesn't block map interactions
-  },
-  fogGradient: {
-    flex: 1,
-    backgroundColor: 'rgba(5, 15, 25, 0.3)',
+    zIndex: 2, // Above map (1), below UI elements (1000)
+    pointerEvents: 'none', // Completely non-interactive
   },
   vignette: {
     position: 'absolute',
