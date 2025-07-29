@@ -574,9 +574,9 @@ export default function MapScreen() {
           <Defs>
             {/* Multi-layered atmospheric fog gradient */}
             <RadialGradient id="atmosphericFog" cx="50%" cy="50%" r="70%">
-              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.2)" />
-              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.5)" />
-              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.8)" />
+              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.1)" />
+              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.2)" />
+              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.3)" />
             </RadialGradient>
             
             {/* Masking system for discovered station reveals */}
