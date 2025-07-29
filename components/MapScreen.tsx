@@ -576,17 +576,7 @@ export default function MapScreen() {
               {/* White background = fog visible */}
               <Rect width="100%" height="100%" fill="white" />
               
-              {/* Black circle around user location = fog transparent */}
-              {currentLocation && (
-                <Circle
-                  cx={width / 2}  // User location is always centered
-                  cy={height / 2} // User location is always centered  
-                  r={40} // 40px exclusion radius around user
-                  fill="black"
-                />
-              )}
-              
-              {/* Black circles around discovered stations */}
+              {/* Black circles around discovered stations only */}
               {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
                 <Circle
                   key={`exclude-${stationId}`}
