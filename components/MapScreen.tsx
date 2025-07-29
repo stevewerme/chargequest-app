@@ -550,7 +550,7 @@ function AnimatedEnergyCell({
               </View>
             </View>
             <View style={styles.pixelTapHint}>
-              <Text style={styles.pixelTapText}>TAP</Text>
+              <Text style={styles.pixelTapText}>CLAIM</Text>
             </View>
           </View>
         )}
@@ -885,9 +885,9 @@ const styles = StyleSheet.create({
   },
   pixelProgressContainer: {
     position: 'absolute',
-    bottom: -12, // Below the crystal, clearly visible
-    left: -3, // Slightly wider than crystal for better visibility
-    right: -3,
+    bottom: -25, // Much further below the crystal
+    left: -5, // Wider than crystal for better visibility
+    right: -5,
     height: 8, // Clearly visible progress bar
     alignItems: 'center',
   },
@@ -912,11 +912,11 @@ const styles = StyleSheet.create({
   },
   pixelTapHint: {
     position: 'absolute',
-    bottom: -22, // Above the progress bar, below crystal
+    bottom: -40, // Above the progress bar, well below crystal
     alignSelf: 'center',
     backgroundColor: '#ffdd00', // Bright yellow background
-    paddingHorizontal: 4, // Compact padding
-    paddingVertical: 2,
+    paddingHorizontal: 6, // More readable padding
+    paddingVertical: 3,
     borderRadius: 2,
     borderWidth: 1,
     borderColor: '#000000', // Black border for definition
