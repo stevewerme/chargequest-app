@@ -6,12 +6,12 @@ import { useGameStore } from '../stores/gameStore';
 
 const { width, height } = Dimensions.get('window');
 
-// Töjnan, Sollentuna coordinates  
+// Töjnan, Sollentuna coordinates (using user-provided precise locations)
 const STOCKHOLM_REGION = {
-  latitude: 59.4285, // Center of Töjnan area
-  longitude: 17.9520, // Center of Töjnan area
-  latitudeDelta: 0.005, // Zoomed in for neighborhood view
-  longitudeDelta: 0.005, // Zoomed in for neighborhood view
+  latitude: 59.4235, // Center of user's Töjnan coordinates
+  longitude: 17.9342, // Center of user's Töjnan coordinates
+  latitudeDelta: 0.008, // Adjusted to show all stations
+  longitudeDelta: 0.008, // Adjusted to show all stations
 };
 
 // Note: Energy cells now come from the game store
