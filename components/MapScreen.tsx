@@ -567,46 +567,46 @@ export default function MapScreen() {
             </Marker>
           ))}
         </MapView>
-      </View>
 
-      {/* Dynamic fog overlay with reveals around discovered stations */}
-      <BlurView 
-        intensity={12} 
-        style={styles.fogOverlay} 
-        tint="dark"
-        pointerEvents="none"
-      >
-        <View style={styles.fogGradient} />
-        
-        {/* SVG Mask for discovered station reveals */}
-        <Svg style={StyleSheet.absoluteFill}>
-          <Defs>
-            <Mask id="fogRevealMask">
-              {/* White background = fog visible */}
-              <Rect width="100%" height="100%" fill="white" />
-              
-              {/* Black circles = transparent holes around discovered stations */}
-              {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
-                <Circle
-                  key={`reveal-${stationId}`}
-                  cx={coords.x}
-                  cy={coords.y}
-                  r={coords.radius}
-                  fill="black" // Black = transparent in mask
-                />
-              ))}
-            </Mask>
-          </Defs>
+        {/* Dynamic fog overlay with reveals around discovered stations */}
+        <BlurView 
+          intensity={12} 
+          style={styles.fogOverlay} 
+          tint="dark"
+          pointerEvents="none"
+        >
+          <View style={styles.fogGradient} />
           
-          {/* Apply the mask to create fog with holes */}
-          <Rect 
-            width="100%" 
-            height="100%" 
-            fill="rgba(5, 15, 25, 0.6)" // Dark fog color
-            mask="url(#fogRevealMask)" 
-          />
-        </Svg>
-      </BlurView>
+          {/* SVG Mask for discovered station reveals */}
+          <Svg style={StyleSheet.absoluteFill}>
+            <Defs>
+              <Mask id="fogRevealMask">
+                {/* White background = fog visible */}
+                <Rect width="100%" height="100%" fill="white" />
+                
+                {/* Black circles = transparent holes around discovered stations */}
+                {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
+                  <Circle
+                    key={`reveal-${stationId}`}
+                    cx={coords.x}
+                    cy={coords.y}
+                    r={coords.radius}
+                    fill="black" // Black = transparent in mask
+                  />
+                ))}
+              </Mask>
+            </Defs>
+            
+            {/* Apply the mask to create fog with holes */}
+            <Rect 
+              width="100%" 
+              height="100%" 
+              fill="rgba(5, 15, 25, 0.6)" // Dark fog color
+              mask="url(#fogRevealMask)" 
+            />
+          </Svg>
+        </BlurView>
+      </View>
 
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
@@ -714,8 +714,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1, // Lower z-index so markers render on top
+    zIndex: -1, // Negative z-index to ensure it renders behind map markers
     opacity: 0.4,
+    pointerEvents: 'none', // Ensure it doesn't block map interactions
   },
   fogGradient: {
     flex: 1,
