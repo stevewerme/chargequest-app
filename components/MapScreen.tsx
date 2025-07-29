@@ -568,23 +568,28 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-      {/* Fog temporarily disabled - SVG approach has issues */}
-      {/*
+      {/* Simple SVG fog with user location exclusion */}
       <View style={styles.fogOverlay} pointerEvents="none">
         <Svg style={StyleSheet.absoluteFill}>
           <Defs>
-            <RadialGradient id="atmosphericFog" cx="50%" cy="50%" r="70%">
-              <Stop offset="0%" stopColor="rgba(5, 15, 25, 0.05)" />
-              <Stop offset="40%" stopColor="rgba(5, 15, 25, 0.08)" />
-              <Stop offset="100%" stopColor="rgba(5, 15, 25, 0.12)" />
-            </RadialGradient>
-            
-            <Mask id="fogRevealMask">
+            <Mask id="simpleFogMask">
+              {/* White background = fog visible */}
               <Rect width="100%" height="100%" fill="white" />
               
+              {/* Black circle around user location = fog transparent */}
+              {currentLocation && (
+                <Circle
+                  cx={width / 2}  // User location is always centered
+                  cy={height / 2} // User location is always centered  
+                  r={40} // 40px exclusion radius around user
+                  fill="black"
+                />
+              )}
+              
+              {/* Black circles around discovered stations */}
               {Object.entries(revealScreenCoords).map(([stationId, coords]) => (
                 <Circle
-                  key={`reveal-${stationId}`}
+                  key={`exclude-${stationId}`}
                   cx={coords.x}
                   cy={coords.y}
                   r={coords.radius}
@@ -594,21 +599,18 @@ export default function MapScreen() {
             </Mask>
           </Defs>
           
+          {/* Simple solid fog with exclusions */}
           <Rect 
             width="100%" 
             height="100%" 
-            fill="url(#atmosphericFog)" 
-            mask="url(#fogRevealMask)" 
+            fill="rgba(5, 15, 25, 0.2)" 
+            mask="url(#simpleFogMask)" 
           />
         </Svg>
       </View>
-      */}
 
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
-
-      {/* Simple non-SVG fog test */}
-      <View style={styles.simpleFogOverlay} pointerEvents="none" />
     </View>
   );
 }
@@ -828,6 +830,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 2, // Above map (1), below UI elements (1000)
     pointerEvents: 'none', // Completely non-interactive
-    backgroundColor: 'rgba(5, 15, 25, 0.15)', // Slightly more visible atmospheric effect
+    backgroundColor: 'rgba(5, 15, 25, 0.2)', // Reasonable atmospheric effect
   },
 }); 
