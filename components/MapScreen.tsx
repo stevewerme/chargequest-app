@@ -560,22 +560,31 @@ export default function MapScreen() {
               <Rect width="100%" height="100%" fill="white" />
               
               {/* Black circles = transparent holes around discovered stations */}
-              {safeChargingStations
-                .filter(station => station.isDiscovered)
-                .map(station => {
-                  const screenPos = convertGPSToScreen(station.latitude, station.longitude);
-                  const radius = getRevealRadius();
-                  
-                  return (
-                    <Circle
-                      key={`reveal-${station.id}`}
-                      cx={screenPos.x}
-                      cy={screenPos.y}
-                      r={radius}
-                      fill="black" // Black = transparent in mask
-                    />
-                  );
-                })
+              {safeChargingStations && safeChargingStations.length > 0 && 
+                safeChargingStations
+                  .filter(station => station && station.isDiscovered)
+                  .map(station => {
+                    if (!station.latitude || !station.longitude) return null;
+                    
+                    const screenPos = convertGPSToScreen(station.latitude, station.longitude);
+                    const radius = getRevealRadius();
+                    
+                    // Safety check for valid screen coordinates
+                    if (!screenPos || isNaN(screenPos.x) || isNaN(screenPos.y) || isNaN(radius)) {
+                      return null;
+                    }
+                    
+                    return (
+                      <Circle
+                        key={`reveal-${station.id}`}
+                        cx={screenPos.x}
+                        cy={screenPos.y}
+                        r={radius}
+                        fill="black" // Black = transparent in mask
+                      />
+                    );
+                  })
+                  .filter(Boolean) // Remove any null entries
               }
             </Mask>
           </Defs>
@@ -752,27 +761,27 @@ const styles = StyleSheet.create({
     bottom: -5,
     left: 5,
     right: 5,
-    height: 2,
+    height: 4, // Increased from 2 to 4 for better visibility
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 1,
+    borderRadius: 2, // Increased from 1 to 2 to match height
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#ffaa00',
-    borderRadius: 1,
+    borderRadius: 2, // Increased from 1 to 2 to match unlockProgress
   },
   tapHint: {
     position: 'absolute',
     bottom: -15,
     alignSelf: 'center',
     backgroundColor: 'rgba(255, 170, 0, 0.8)',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 3,
+    paddingHorizontal: 6, // Increased from 4 to 6
+    paddingVertical: 2, // Increased from 1 to 2
+    borderRadius: 4, // Increased from 3 to 4
   },
   tapHintText: {
     color: '#000000',
-    fontSize: 8,
+    fontSize: 12, // Increased from 8 to 12 for better readability
     fontWeight: 'bold',
   },
   // Status text styles
