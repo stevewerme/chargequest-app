@@ -32,11 +32,12 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - **Weekly respawn** of treasures on all discovered stations
 - **Instant redemption** via QR codes or voucher codes
 
-### 4. User Profile & Progress
-- **Discovery counter**: Stations unlocked out of total
-- **Treasure collection history**
-- **Simple achievement system** (first station, weekend explorer, etc.)
-- **Personal map** showing all discovered areas
+### 4. XP Progression & User Profile
+- **XP System**: Discovery actions grant experience points (100 XP per station + bonuses)
+- **Level progression**: 5 levels with meaningful unlocks enhancing exploration
+- **Discovery counter**: Stations unlocked out of total with XP progress bar
+- **Level unlocks**: Energy Radar, Treasure Preview, Explorer's Eye, Master Tracker
+- **Personal map** showing all discovered areas with progression statistics
 
 ### 5. Push Notifications
 - **Weekly treasure alerts**: "3 new treasures available at your discovered stations"
@@ -63,37 +64,74 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - **Social login** (Google, Apple) - nice to have
 
 ### Data Storage
-- **Frontend-first approach**: Local storage with AsyncStorage for rapid development
-- **User progress persistence** locally with easy Supabase migration path
-- **Discovered stations per user** stored locally initially
-- **Future migration**: Supabase for user profiles, cloud sync, and multi-device support
+- **Local-first development strategy**: AsyncStorage with Zustand persistence for rapid iteration
+- **XP progression tracking** locally with robust persistence layer
+- **Discovered stations and user progress** stored locally initially
+- **Week 6 seamless migration**: Zero-data-loss migration to Supabase cloud sync
+- **Migration benefits**: Multi-device support, user analytics, and cloud backup
+- **Risk mitigation**: Local state provides reliable fallback and faster development cycles
 
 ### Key Dependencies
 ```json
 {
   "react-native-maps": "latest",
   "expo-location": "latest",
-  "@react-native-async-storage/async-storage": "latest",
+  "@react-native-async-storage/async-storage": "latest (primary storage Week 4-5)",
   "expo-haptics": "latest",
-  "zustand": "latest",
-  "@supabase/supabase-js": "latest (future)"
+  "zustand": "latest (with persist middleware)",
+  "@supabase/supabase-js": "latest (Week 6 migration)"
 }
 ```
+
+## XP Progression System
+
+### XP Sources
+- **New station discovered**: +100 XP (core action)
+- **Area bonus**: +200 XP (first discovery in new neighborhood)
+- **Weekend discovery**: +50 XP (encourages off-peak exploration)
+- **Future - Charging session**: +500 XP (actual charging detected)
+
+### Level Progression (5 Levels MVP)
+- **Level 1** (0 XP): "Energy Seeker" - Starting level
+- **Level 2** (300 XP): "Grid Explorer" - Unlocks Energy Radar
+- **Level 3** (800 XP): "Charge Hunter" - Unlocks Treasure Preview
+- **Level 4** (1500 XP): "Power Tracker" - Unlocks Explorer's Eye
+- **Level 5** (2500 XP): "Energy Master" - Unlocks Master Tracker
+
+### Level Unlocks
+- **Energy Radar**: Distance indicator to nearest undiscovered station
+- **Treasure Preview**: See available rewards at discovered stations
+- **Explorer's Eye**: Highlight stations not visited in 7+ days
+- **Master Tracker**: Personal discovery statistics and heatmap
+
+## Migration Strategy
+
+### Local State Implementation (Week 4-5)
+- **XP System**: Implemented in Zustand store with AsyncStorage persistence
+- **Robust data structure**: XP, level, discovered stations, and timestamps
+- **Real data integration**: Stockholm charging stations with local XP tracking
+- **User benefit**: Fast, reliable progression system with instant responsiveness
+
+### Supabase Migration (Week 6)
+- **Zero data loss**: Automatic detection and migration of local progress on first cloud login
+- **Migration process**: Read local AsyncStorage → Upload to Supabase → Verify sync → Clear local cache
+- **Fallback protection**: Local data retained until successful cloud verification
+- **Enhanced features**: Multi-device sync, user analytics, and cloud backup unlock
 
 ## User Journey
 
 ### First-Time User
-1. Download app, create account
-2. See black map with mysterious glowing points
+1. Download app, create account (Level 1: "Energy Seeker")
+2. See black map with mysterious glowing points and XP progress bar
 3. Drive to nearest energy cell (charging station)
-4. Unlock first area, claim first treasure
-5. Understand the discovery mechanic
+4. Unlock first area, gain +100 XP, claim first treasure
+5. Understand discovery mechanic and XP progression toward Level 2
 
 ### Returning User
-1. Open app, see weekly treasure notification
-2. Check map for discovered stations with new treasures
-3. Plan route to collect multiple treasures
-4. Discover new stations opportunistically
+1. Open app, see weekly treasure notification and XP progress
+2. Check map for discovered stations with new treasures (if Level 3+)
+3. Plan route to collect treasures and gain additional XP
+4. Discover new stations for XP bonuses and level progression
 
 ## Success Metrics
 
@@ -104,6 +142,8 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - **Charging behavior**: 25%+ increase in sessions per user
 
 ### Secondary Metrics
+- **XP progression**: Average user reaches Level 3+ within 2 weeks
+- **Level distribution**: 60%+ of active users at Level 2 or higher
 - **Treasure redemption rate**: 70%+ of claimed treasures used
 - **App session duration**: 2+ minutes average
 - **Geographic spread**: Users discovering stations across Stockholm
@@ -114,7 +154,7 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 1. **As an EV driver**, I want to see a mysterious map of Stockholm so that I'm curious about what energy cells represent
 2. **As an EV driver**, I want to unlock areas by visiting charging stations so that I feel like I'm exploring and discovering
 3. **As an EV driver**, I want to claim digital treasures at stations so that I have an immediate reward for visiting
-4. **As an EV driver**, I want to track my discovery progress so that I feel motivated to explore more stations
+4. **As an EV driver**, I want to earn XP and level up from discoveries so that I feel continuous progression and unlock helpful exploration features
 5. **As an EV driver**, I want to receive notifications about new treasures so that I'm reminded to return to discovered stations
 
 ### Technical User Stories
@@ -131,6 +171,7 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - ❌ Advanced AR features
 - ❌ Offline map downloads
 - ❌ Route planning integration
+- ❌ Complex backend infrastructure blocking core gameplay development
 
 ## Development Timeline
 
@@ -141,30 +182,32 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - [x] Animated energy cell markers with glowing effects
 - [x] Basic app structure and navigation
 
-### Week 3: Core Gameplay (Current)
-- [ ] GPS permissions and location tracking setup
-- [ ] Proximity detection system (25m trigger radius)
-- [ ] Local state management with Zustand + AsyncStorage
-- [ ] Station unlock functionality and animations
-- [ ] Progress tracking with persistent storage
+### Week 3: Core Gameplay ✅
+- [x] GPS permissions and location tracking setup
+- [x] Proximity detection system (25m trigger radius)
+- [x] Local state management with Zustand + AsyncStorage
+- [x] Station unlock functionality and animations
+- [x] Progress tracking with persistent storage
 
-### Week 4: Enhanced Experience
-- [ ] Unlock animations and haptic feedback
-- [ ] Area reveal effects after discovery
-- [ ] Achievement system and milestone tracking
-- [ ] Polish gameplay mechanics and UX
+### Week 4: Enhanced Experience ✅
+- [x] Unlock animations and haptic feedback
+- [x] Area reveal effects after discovery
+- [x] XP progression system with 5 levels and exploration-focused unlocks (local AsyncStorage)
+- [x] Polish gameplay mechanics and UX with NES-inspired pixel art interface
 
-### Week 5: Data Integration
-- [ ] Nobil API service implementation
-- [ ] Replace mock data with real Stockholm charging stations
-- [ ] Error handling and loading states
-- [ ] Performance optimization for large datasets
+### Week 5: Data Integration (Ready - Awaiting API Key)
+- [x] Nobil API service implementation with comprehensive Stockholm mock data
+- [x] Replace mock data with real Stockholm charging stations (~30 stations ready)
+- [x] Integrate real data with existing local XP progression system
+- [x] Error handling and loading states with retry logic and caching
+- [x] Performance optimization for large datasets with offline fallbacks
 
-### Week 6: Backend Integration
+### Week 6: Backend Integration & Migration
 - [ ] Supabase project setup and authentication
-- [ ] Migrate local storage to cloud sync
-- [ ] User profiles and cross-device progress
+- [ ] Implement zero-data-loss migration from local AsyncStorage to cloud
+- [ ] User profiles and cross-device progress synchronization
 - [ ] Treasure system with digital rewards
+- [ ] Migration testing with existing local user data
 
 ### Week 7-8: Launch Preparation
 - [ ] Push notification system

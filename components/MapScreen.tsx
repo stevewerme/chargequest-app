@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Animated, Alert, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
+import * as Haptics from 'expo-haptics';
 import { useGameStore } from '../stores/gameStore';
 import { locationService } from '../services/locationService';
 
@@ -377,6 +378,102 @@ const mapStyle = [
   }
 ];
 
+// Claim Popover Component
+interface ClaimPopoverProps {
+  visible: boolean;
+  stationName: string;
+  onClaim: () => void;
+  onCancel: () => void;
+}
+
+function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverProps) {
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible, fadeAnim, slideAnim]);
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View 
+      style={[
+        styles.popoverContainer,
+        {
+          opacity: fadeAnim,
+          transform: [
+            {
+              scale: slideAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.8, 1],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <View style={styles.nesPopoverContent}>
+        <View style={styles.popoverHeader}>
+          <Text style={styles.nesPopoverTitle}>ENERGY CELL DISCOVERED!</Text>
+        </View>
+        
+        <View style={styles.locationInfo}>
+          <View style={styles.locationIcon}>
+            <Text style={styles.locationEmoji}>⚡</Text>
+          </View>
+          <Text style={styles.nesLocationName}>{stationName}</Text>
+        </View>
+        
+        <TouchableOpacity style={styles.nesClaimButton} onPress={onClaim}>
+          <View style={styles.nesClaimBorder}>
+            <View style={styles.nesClaimInner}>
+              <Text style={styles.nesClaimIcon}>💎</Text>
+              <Text style={styles.nesClaimText}>CLAIM ENERGY</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.nesCancelButton} onPress={onCancel}>
+          <View style={styles.nesCancelBorder}>
+            <Text style={styles.nesCancelText}>CANCEL</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Popover arrow */}
+      <View style={styles.popoverArrow} />
+    </Animated.View>
+  );
+}
+
 // Animated Energy Cell Component
 interface AnimatedEnergyCellProps {
   isDiscovered: boolean;
@@ -384,7 +481,8 @@ interface AnimatedEnergyCellProps {
   isUnlocking: boolean;
   unlockProgress: number;
   stationId: string;
-  onUnlock: (stationId: string) => void;
+  stationName: string;
+  onShowPopover: (stationId: string, stationName: string) => void;
 }
 
 function AnimatedEnergyCell({ 
@@ -393,7 +491,8 @@ function AnimatedEnergyCell({
   isUnlocking, 
   unlockProgress, 
   stationId, 
-  onUnlock 
+  stationName,
+  onShowPopover 
 }: AnimatedEnergyCellProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -426,8 +525,13 @@ function AnimatedEnergyCell({
   }, [isDiscovered, isUnlocking, pulseAnim]);
 
   const handlePress = () => {
-    if (isDiscoverable && !isUnlocking && !isDiscovered) {
-      onUnlock(stationId);
+    if (isDiscovered || isUnlocking) {
+      return; // Already claimed or popover already open
+    }
+    
+    if (isDiscoverable) {
+      // Show claim popover
+      onShowPopover(stationId, stationName);
     }
   };
 
@@ -550,15 +654,58 @@ export default function MapScreen() {
   const { 
     chargingStations, 
     totalDiscovered, 
+    totalXP,
+    currentLevel,
+    levelTitle,
+    xpToNextLevel,
     initializePermissions, 
     startLocationTracking,
-    startUnlock,
+    completeUnlock,
     resetProgress,
     currentLocation,
     isLoading,
     error,
     locationPermissionGranted 
   } = useGameStore();
+
+  // Popover state
+  const [popoverVisible, setPopoverVisible] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<{id: string, name: string} | null>(null);
+
+  // XP Progress calculation
+  const getXPProgress = () => {
+    if (!xpToNextLevel) return 100; // Max level reached
+    
+    // XP requirements for each level
+    const levelRequirements = [0, 300, 800, 1500, 2500];
+    const currentLevelXP = levelRequirements[currentLevel - 1] || 0;
+    const nextLevelXP = xpToNextLevel;
+    const progressXP = totalXP - currentLevelXP;
+    const levelRange = nextLevelXP - currentLevelXP;
+    
+    return Math.min(100, Math.max(0, (progressXP / levelRange) * 100));
+  };
+
+  // Popover handlers
+  const handleShowPopover = (stationId: string, stationName: string) => {
+    setSelectedStation({ id: stationId, name: stationName });
+    setPopoverVisible(true);
+  };
+
+  const handleClosePopover = () => {
+    setPopoverVisible(false);
+    setSelectedStation(null);
+  };
+
+  const handleClaim = () => {
+    if (selectedStation) {
+      // Immediate haptic feedback for claim action
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      completeUnlock(selectedStation.id);
+      handleClosePopover();
+    }
+  };
 
   // Safety check: ensure chargingStations is always an array
   const safeChargingStations = chargingStations || [];
@@ -659,13 +806,19 @@ export default function MapScreen() {
   const handleReset = () => {
     Alert.alert(
       'Reset Progress',
-      'This will clear all discovered energy cells and reset your progress. Are you sure?',
+      'This will reload Stockholm stations and reset your progress. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Reset', 
           style: 'destructive',
-          onPress: resetProgress
+          onPress: async () => {
+            try {
+              await resetProgress();
+            } catch (error) {
+              console.error('Failed to reset progress:', error);
+            }
+          }
         }
       ]
     );
@@ -689,27 +842,86 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with discovery counter */}
-      <View style={styles.header}>
-        <Text style={styles.headerText}>ChargeQuest</Text>
-        <Text style={styles.counterText}>
-          {totalDiscovered}/{safeChargingStations.length} Energy Cells Discovered
-        </Text>
-        <Text style={styles.privacyText}>🇪🇺 Privacy-First • Apple Maps</Text>
+            {/* Pixel Art Header Interface - Shop Style */}
+      <View style={styles.pixelHeader}>
+        {/* Main Header Panel */}
+        <View style={styles.headerPanel}>
+          <View style={styles.headerBorder}>
+            <Text style={styles.pixelTitle}>CHARGEQUEST</Text>
+            
+            {/* Stats Row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <View style={styles.pixelIcon}>
+                  <Text style={styles.iconText}>⚡</Text>
+                </View>
+                <Text style={styles.statText}>{totalDiscovered}/{safeChargingStations.length}</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <View style={styles.pixelIcon}>
+                  <Text style={styles.iconText}>🏆</Text>
+                </View>
+                <Text style={styles.statText}>LVL {currentLevel}</Text>
+              </View>
+              
+              <View style={styles.statItem}>
+                <View style={styles.pixelIcon}>
+                  <Text style={styles.iconText}>💎</Text>
+                </View>
+                <Text style={styles.statText}>{totalXP} XP</Text>
+              </View>
+            </View>
+            
+            {/* Level Progress Banner */}
+            <View style={styles.levelBanner}>
+              <View style={styles.bannerBorder}>
+                <Text style={styles.levelBannerText}>{levelTitle.toUpperCase()}</Text>
+              </View>
+            </View>
+            
+            {/* XP Progress Bar - Pixel Art Style */}
+            <View style={styles.pixelProgressContainer}>
+              <View style={styles.pixelProgressBorder}>
+                <View style={styles.pixelProgressTrack}>
+                  <View 
+                    style={[
+                      styles.pixelProgressFill, 
+                      { width: `${getXPProgress()}%` }
+                    ]} 
+                  />
+                </View>
+              </View>
+              <Text style={styles.progressText}>
+                {xpToNextLevel ? `${xpToNextLevel - totalXP} XP to next level` : 'MAX LEVEL REACHED!'}
+              </Text>
+            </View>
+          </View>
+        </View>
         
-        {/* Pixel art buttons */}
-        <View style={styles.buttonRow}>
+        <Text style={styles.privacyText}>
+          🇪🇺 Privacy-First • Stockholm Data • {safeChargingStations.length} Stations Loaded
+        </Text>
+        
+        {/* Enhanced Pixel Art Control Buttons */}
+        <View style={styles.controlButtonsRow}>
           {/* Reset Progress Button */}
-          <TouchableOpacity style={styles.pixelButton} onPress={handleReset}>
-            <View style={styles.pixelButtonBorder}>
-              <Text style={styles.pixelButtonText}>🔄 RESET</Text>
+          <TouchableOpacity style={styles.nesButton} onPress={handleReset}>
+            <View style={styles.nesButtonBorder}>
+              <View style={styles.nesButtonInner}>
+                <Text style={styles.nesButtonIcon}>🔄</Text>
+                <Text style={styles.nesButtonText}>RESET</Text>
+              </View>
             </View>
           </TouchableOpacity>
           
           {/* Center on User Button */}
-          <TouchableOpacity style={styles.pixelButton} onPress={handleCenterOnUser}>
-            <View style={styles.pixelButtonBorder}>
-              <Text style={styles.pixelButtonText}>📍 CENTER</Text>
+          <TouchableOpacity style={styles.nesButton} onPress={handleCenterOnUser}>
+            <View style={styles.nesButtonBorder}>
+              <View style={styles.nesButtonInner}>
+                <Text style={styles.nesButtonIcon}>📍</Text>
+                <Text style={styles.nesButtonText}>CENTER</Text>
+              </View>
             </View>
           </TouchableOpacity>
         </View>
@@ -766,8 +978,19 @@ export default function MapScreen() {
                 isUnlocking={station.isUnlocking}
                 unlockProgress={station.unlockProgress}
                 stationId={station.id}
-                onUnlock={startUnlock}
+                stationName={station.title}
+                onShowPopover={handleShowPopover}
               />
+              
+              {/* Popover attached to this crystal */}
+              {selectedStation?.id === station.id && (
+                <ClaimPopover
+                  visible={popoverVisible}
+                  stationName={selectedStation.name}
+                  onClaim={handleClaim}
+                  onCancel={handleClosePopover}
+                />
+              )}
             </Marker>
           ))}
 
@@ -775,34 +998,7 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-      {/* Static viewport UI for claiming */}
-      {safeChargingStations.some(s => s.isUnlocking) && (
-        <View style={styles.staticClaimUI} pointerEvents="none">
-          {(() => {
-            const unlockingStation = safeChargingStations.find(s => s.isUnlocking);
-            if (!unlockingStation) return null;
-            
-            return (
-              <>
-                <View style={styles.staticClaimHint}>
-                  <Text style={styles.staticClaimText}>CLAIM</Text>
-                  <Text style={styles.staticLocationText}>{unlockingStation.title}</Text>
-                </View>
-                <View style={styles.staticProgressContainer}>
-                  <View style={styles.staticProgressBar}>
-                    <View 
-                      style={[
-                        styles.staticProgressFill, 
-                        { width: `${unlockingStation.unlockProgress * 100}%` }
-                      ]} 
-                    />
-                  </View>
-                </View>
-              </>
-            );
-          })()}
-        </View>
-      )}
+
 
       {/* Simple fog overlay - basic atmospheric dimming */}
       <View style={styles.fogOverlay} pointerEvents="none">
@@ -1137,53 +1333,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(5, 15, 25, 0.2)', // Reasonable atmospheric effect
   },
 
-  // Static viewport UI styles
-  staticClaimUI: {
-    position: 'absolute',
-    bottom: 50, // Above device UI, clearly visible
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-    zIndex: 1000, // Above everything
-  },
-  staticClaimHint: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#ffdd00',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  staticClaimText: {
-    color: '#ffdd00',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  staticLocationText: {
-    color: '#ffffff',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  staticProgressContainer: {
-    width: '100%',
-    height: 12,
-    backgroundColor: '#000000',
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#ffdd00',
-    overflow: 'hidden',
-  },
-  staticProgressBar: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#333333',
-  },
-  staticProgressFill: {
-    height: '100%',
-    backgroundColor: '#ffdd00',
-  },
+
   // Pixel art button styles
   buttonRow: {
     flexDirection: 'row',
@@ -1205,5 +1355,352 @@ const styles = StyleSheet.create({
     color: '#ffffff', // White text on black background
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  // Popover styles
+  popoverContainer: {
+    position: 'absolute',
+    bottom: -80, // Above the crystal
+    left: -60, // Center relative to crystal
+    right: -60,
+    zIndex: 1000,
+    alignItems: 'center',
+  },
+  popoverContent: {
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#ffdd00',
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  popoverTitle: {
+    color: '#ffdd00',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  popoverLocationName: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  swipeToClaimButton: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  swipeBackground: {
+    backgroundColor: '#ffdd00',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  swipeText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  cancelText: {
+    color: '#ffffff',
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  popoverArrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#ffdd00',
+    marginTop: -1,
+  },
+  // XP System styles
+  xpContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  levelText: {
+    color: '#ffdd00',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  xpBar: {
+    width: 200,
+    marginBottom: 2,
+  },
+  xpBarBackground: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#333333',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ffdd00',
+    overflow: 'hidden',
+  },
+  xpBarFill: {
+    height: '100%',
+    backgroundColor: '#ffdd00',
+    borderRadius: 3,
+  },
+  xpText: {
+    color: '#ffffff',
+    fontSize: 10,
+    opacity: 0.8,
+  },
+  
+  // Enhanced Pixel Art Header Styles
+  pixelHeader: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    right: 10,
+    zIndex: 1000,
+    alignItems: 'center',
+  },
+  headerPanel: {
+    backgroundColor: '#2a2a2a',
+    borderWidth: 3,
+    borderColor: '#ffdd00',
+    borderRadius: 0, // Sharp pixel corners
+    padding: 12,
+    minWidth: 320,
+  },
+  headerBorder: {
+    borderWidth: 2,
+    borderColor: '#666666',
+    backgroundColor: '#1a1a1a',
+    padding: 8,
+  },
+  pixelTitle: {
+    color: '#ffdd00',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontFamily: 'monospace', // More pixel-like font
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 8,
+  },
+  statItem: {
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  pixelIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#333333',
+    borderWidth: 2,
+    borderColor: '#666666',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  iconText: {
+    fontSize: 12,
+  },
+  statText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  levelBanner: {
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  bannerBorder: {
+    backgroundColor: '#ffdd00',
+    borderWidth: 2,
+    borderColor: '#cc9900',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderRadius: 0,
+  },
+  levelBannerText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  pixelProgressContainer: {
+    alignItems: 'center',
+  },
+  pixelProgressBorder: {
+    borderWidth: 2,
+    borderColor: '#666666',
+    backgroundColor: '#000000',
+    width: 200,
+    height: 16,
+    marginBottom: 4,
+  },
+  pixelProgressTrack: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#222222',
+    borderWidth: 1,
+    borderColor: '#444444',
+  },
+  pixelProgressFill: {
+    height: '100%',
+    backgroundColor: '#00ff00',
+    borderRightWidth: 2,
+    borderRightColor: '#00cc00',
+  },
+  progressText: {
+    color: '#cccccc',
+    fontSize: 9,
+    fontFamily: 'monospace',
+  },
+  
+  // Enhanced NES-Style Control Buttons
+  controlButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+  nesButton: {
+    minWidth: 80,
+  },
+  nesButtonBorder: {
+    backgroundColor: '#4a4a4a',
+    borderWidth: 3,
+    borderTopColor: '#888888',
+    borderLeftColor: '#888888', 
+    borderRightColor: '#222222',
+    borderBottomColor: '#222222',
+    borderRadius: 0,
+  },
+  nesButtonInner: {
+    backgroundColor: '#666666',
+    borderWidth: 1,
+    borderColor: '#555555',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  nesButtonIcon: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  nesButtonText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  
+  // Enhanced NES-Style Popover
+  nesPopoverContent: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 3,
+    borderColor: '#ffdd00',
+    borderRadius: 0,
+    padding: 0,
+    minWidth: 240,
+    alignItems: 'center',
+  },
+  popoverHeader: {
+    backgroundColor: '#ffdd00',
+    width: '100%',
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: '#cc9900',
+  },
+  nesPopoverTitle: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  locationIcon: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#333333',
+    borderWidth: 2,
+    borderColor: '#666666',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  locationEmoji: {
+    fontSize: 16,
+  },
+  nesLocationName: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    flex: 1,
+  },
+  nesClaimButton: {
+    marginBottom: 8,
+  },
+  nesClaimBorder: {
+    backgroundColor: '#00aa00',
+    borderWidth: 3,
+    borderTopColor: '#00ff00',
+    borderLeftColor: '#00ff00',
+    borderRightColor: '#006600',
+    borderBottomColor: '#006600',
+    borderRadius: 0,
+  },
+  nesClaimInner: {
+    backgroundColor: '#00cc00',
+    borderWidth: 1,
+    borderColor: '#009900',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nesClaimIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  nesClaimText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  nesCancelButton: {
+    marginBottom: 12,
+  },
+  nesCancelBorder: {
+    backgroundColor: '#666666',
+    borderWidth: 2,
+    borderColor: '#888888',
+    borderRadius: 0,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  nesCancelText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontFamily: 'monospace',
   },
 }); 

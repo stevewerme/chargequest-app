@@ -4,6 +4,61 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { ChargingStation, UserLocation, UserProgress } from '../types/ChargingStation';
 import { locationService } from '../services/locationService';
+import { nobilApi } from '../services/nobilApi';
+
+// XP Progression System Constants
+const XP_REWARDS = {
+  NEW_STATION: 100,
+  AREA_BONUS: 200,    // First discovery in new neighborhood
+  WEEKEND_BONUS: 50,  // Weekend discoveries
+  CHARGING_SESSION: 500  // Future: actual charging detected
+};
+
+const LEVEL_CONFIG = [
+  { level: 1, xpRequirement: 0, title: "Energy Seeker", description: "Starting your exploration journey" },
+  { level: 2, xpRequirement: 300, title: "Grid Explorer", description: "Unlocks Energy Radar" },
+  { level: 3, xpRequirement: 800, title: "Charge Hunter", description: "Unlocks Treasure Preview" },
+  { level: 4, xpRequirement: 1500, title: "Power Tracker", description: "Unlocks Explorer's Eye" },
+  { level: 5, xpRequirement: 2500, title: "Energy Master", description: "Unlocks Master Tracker" }
+];
+
+// Helper functions for XP system
+const calculateLevelFromXP = (xp: number): number => {
+  for (let i = LEVEL_CONFIG.length - 1; i >= 0; i--) {
+    if (xp >= LEVEL_CONFIG[i].xpRequirement) {
+      return LEVEL_CONFIG[i].level;
+    }
+  }
+  return 1; // Default to level 1
+};
+
+const getLevelInfo = (level: number) => {
+  return LEVEL_CONFIG.find(config => config.level === level) || LEVEL_CONFIG[0];
+};
+
+const getNextLevelXP = (currentLevel: number): number | null => {
+  const nextLevelConfig = LEVEL_CONFIG.find(config => config.level === currentLevel + 1);
+  return nextLevelConfig ? nextLevelConfig.xpRequirement : null;
+};
+
+const calculateXPReward = (stationId: string, discoveredStations: string[]): number => {
+  let reward = XP_REWARDS.NEW_STATION;
+  
+  // Weekend bonus (Saturday = 6, Sunday = 0)
+  const now = new Date();
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+  if (isWeekend) {
+    reward += XP_REWARDS.WEEKEND_BONUS;
+  }
+  
+  // Area bonus - simplified: every 5th discovery gets area bonus
+  // In future, this could be based on actual geographic distance
+  if (discoveredStations.length > 0 && (discoveredStations.length + 1) % 5 === 0) {
+    reward += XP_REWARDS.AREA_BONUS;
+  }
+  
+  return reward;
+};
 
 // Mock charging stations focused around Töjnan area in Sollentuna
 // Using exact user-provided coordinates for accurate placement
@@ -119,20 +174,28 @@ interface GameState {
   discoveredStations: string[];
   totalDiscovered: number;
   
+  // XP Progression System
+  totalXP: number;
+  currentLevel: number;
+  levelTitle: string;
+  levelDescription: string;
+  xpToNextLevel: number | null;
+  
   // UI State
   isLoading: boolean;
   error: string | null;
   
   // Actions
   initializePermissions: () => Promise<void>;
+  loadChargingStations: () => Promise<void>;
   startLocationTracking: () => Promise<void>;
   stopLocationTracking: () => Promise<void>;
   updateLocation: (location: UserLocation) => void;
   discoverStation: (stationId: string) => void;
   checkProximityAndDiscover: () => void;
-  startUnlock: (stationId: string) => void;
   completeUnlock: (stationId: string) => void;
-  resetProgress: () => void;
+  awardXP: (amount: number, reason?: string) => void;
+  resetProgress: () => Promise<void>;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
 }
@@ -147,6 +210,14 @@ export const useGameStore = create<GameState>()(
       chargingStations: MOCK_STATIONS,
       discoveredStations: [],
       totalDiscovered: 0,
+      
+      // XP Progression Initial State
+      totalXP: 0,
+      currentLevel: 1,
+      levelTitle: "Energy Seeker",
+      levelDescription: "Starting your exploration journey",
+      xpToNextLevel: 300, // XP needed for level 2
+      
       isLoading: false,
       error: null,
 
@@ -167,8 +238,48 @@ export const useGameStore = create<GameState>()(
           } else {
             set({ error: 'Location permission is required to discover charging stations' });
           }
+          
+          // Load charging stations regardless of location permission
+          // This allows users to see the map even without location access
+          await get().loadChargingStations();
+          
         } catch (error) {
           set({ error: 'Failed to initialize location services' });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      loadChargingStations: async () => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          console.log('🔌 Loading Stockholm charging stations...');
+          const stations = await nobilApi.getStockholmStations();
+          
+          // Preserve discovered states from existing stations
+          const { discoveredStations } = get();
+          const updatedStations = stations.map(station => {
+            const wasDiscovered = discoveredStations.includes(station.id);
+            return {
+              ...station,
+              isDiscovered: wasDiscovered,
+              discoveredAt: wasDiscovered ? new Date() : undefined
+            };
+          });
+          
+          set({ 
+            chargingStations: updatedStations,
+            error: null 
+          });
+          
+          const apiStatus = nobilApi.getStatus();
+          console.log(`✅ Loaded ${stations.length} stations (Mock: ${apiStatus.usingMockData})`);
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load charging stations';
+          console.error('❌ Station loading failed:', errorMessage);
+          set({ error: errorMessage });
         } finally {
           set({ isLoading: false });
         }
@@ -271,74 +382,49 @@ export const useGameStore = create<GameState>()(
         set({ chargingStations: updatedStations });
       },
 
-      startUnlock: (stationId: string) => {
-        const { chargingStations } = get();
-        
-        const updatedStations = chargingStations.map(station => 
-          station.id === stationId && station.isDiscoverable
-            ? { ...station, isUnlocking: true, unlockProgress: 0 }
-            : station
-        );
 
-        set({ chargingStations: updatedStations });
-
-        // Start timed unlock (3 seconds)
-        const unlockDuration = 3000;
-        const updateInterval = 50;
-        const progressStep = (100 * updateInterval) / unlockDuration;
-        
-        const unlockTimer = setInterval(() => {
-          const currentState = get();
-          const station = currentState.chargingStations.find(s => s.id === stationId);
-          
-          if (!station || !station.isUnlocking) {
-            clearInterval(unlockTimer);
-            return;
-          }
-
-          const newProgress = Math.min(station.unlockProgress + progressStep, 100);
-          
-          if (newProgress >= 100) {
-            clearInterval(unlockTimer);
-            get().completeUnlock(stationId);
-          } else {
-            const updatedStations = currentState.chargingStations.map(s => 
-              s.id === stationId 
-                ? { ...s, unlockProgress: newProgress }
-                : s
-            );
-            set({ chargingStations: updatedStations });
-          }
-        }, updateInterval);
-      },
 
       completeUnlock: (stationId: string) => {
-        const { chargingStations, discoveredStations } = get();
+        const { chargingStations, discoveredStations, awardXP } = get();
         
         // Prevent duplicate discoveries
         if (discoveredStations.includes(stationId)) {
           return;
         }
 
+        // Find the station being unlocked
+        const station = chargingStations.find(s => s.id === stationId);
+        if (!station) return;
+
+        // Calculate XP reward
+        const xpReward = calculateXPReward(stationId, discoveredStations);
+        const isWeekend = new Date().getDay() === 0 || new Date().getDay() === 6;
+        const isAreaBonus = discoveredStations.length > 0 && (discoveredStations.length + 1) % 5 === 0;
+        
+        // Build XP reason message
+        let xpReason = `Discovered ${station.title}`;
+        if (isWeekend) xpReason += ' (Weekend Bonus!)';
+        if (isAreaBonus) xpReason += ' (Area Explorer Bonus!)';
+
         // Update discovered stations list
         const newDiscoveredStations = [...discoveredStations, stationId];
         
         // Complete the unlock and mark as discovered in one atomic update
-        const updatedStations = chargingStations.map(station => 
-          station.id === stationId
+        const updatedStations = chargingStations.map(s => 
+          s.id === stationId
             ? { 
-                ...station, 
+                ...s, 
                 isDiscovered: true,
                 discoveredAt: new Date(),
                 isUnlocking: false, 
                 unlockProgress: 0,
                 isDiscoverable: false 
               }
-            : station
+            : s
         );
 
-        // Haptic feedback for discovery
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        // Satisfying haptic feedback for successful discovery
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         // Single atomic state update
         set({ 
@@ -346,20 +432,57 @@ export const useGameStore = create<GameState>()(
           discoveredStations: newDiscoveredStations,
           totalDiscovered: newDiscoveredStations.length,
         });
+
+        // Award XP after state update
+        awardXP(xpReward, xpReason);
       },
 
-      resetProgress: () => {
-        const resetStations = MOCK_STATIONS.map(station => ({ 
-          ...station, 
-          isDiscovered: false,
-          discoveredAt: undefined 
-        }));
-        
+      resetProgress: async () => {
+        // Reset XP and discovery progress
         set({
           discoveredStations: [],
           totalDiscovered: 0,
-          chargingStations: resetStations,
+          // Reset XP progression
+          totalXP: 0,
+          currentLevel: 1,
+          levelTitle: "Energy Seeker",
+          levelDescription: "Starting your exploration journey",
+          xpToNextLevel: 300,
         });
+        
+        // Reload fresh station data
+        await get().loadChargingStations();
+      },
+
+      awardXP: (amount: number, reason?: string) => {
+        const { totalXP: currentXP, currentLevel, discoveredStations } = get();
+        const newTotalXP = currentXP + amount;
+        const newLevel = calculateLevelFromXP(newTotalXP);
+        const levelInfo = getLevelInfo(newLevel);
+        const nextLevelXP = getNextLevelXP(newLevel);
+        
+        // Check for level up
+        const leveledUp = newLevel > currentLevel;
+        
+        // Update state
+        set({
+          totalXP: newTotalXP,
+          currentLevel: newLevel,
+          levelTitle: levelInfo.title,
+          levelDescription: levelInfo.description,
+          xpToNextLevel: nextLevelXP,
+        });
+        
+        // Level up celebration
+        if (leveledUp) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          console.log(`🎉 Level Up! You are now ${levelInfo.title}!`);
+        }
+        
+        // Log XP gain for debugging
+        if (reason) {
+          console.log(`+${amount} XP: ${reason} (Total: ${newTotalXP} XP, Level ${newLevel})`);
+        }
       },
 
       setError: (error: string | null) => {
