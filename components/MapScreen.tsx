@@ -4,6 +4,7 @@ import MapView, { Marker, Region } from 'react-native-maps';
 import * as Haptics from 'expo-haptics';
 import { useGameStore } from '../stores/gameStore';
 import { locationService } from '../services/locationService';
+import { ChargingStation } from '../types/ChargingStation';
 
 const { width, height } = Dimensions.get('window');
 
@@ -686,6 +687,33 @@ export default function MapScreen() {
     return Math.min(100, Math.max(0, (progressXP / levelRange) * 100));
   };
 
+  // Energy Radar (Level 2+ feature)
+  const getNearestUndiscoveredStation = (): { station: ChargingStation, distance: number } | null => {
+    if (!currentLocation || currentLevel < 2) return null;
+    
+    const undiscoveredStations = safeChargingStations.filter(station => !station.isDiscovered);
+    if (undiscoveredStations.length === 0) return null;
+    
+    let nearestStation: { station: ChargingStation, distance: number } | null = null;
+    let shortestDistance = Infinity;
+    
+    undiscoveredStations.forEach(station => {
+      const distance = Math.sqrt(
+        Math.pow(station.latitude - currentLocation.latitude, 2) + 
+        Math.pow(station.longitude - currentLocation.longitude, 2)
+      ) * 111000; // Rough conversion to meters
+      
+      if (distance < shortestDistance) {
+        shortestDistance = distance;
+        nearestStation = { station, distance: Math.round(distance) };
+      }
+    });
+    
+    return nearestStation;
+  };
+
+  const nearestStation = getNearestUndiscoveredStation();
+
   // Popover handlers
   const handleShowPopover = (stationId: string, stationName: string) => {
     setSelectedStation({ id: stationId, name: stationName });
@@ -709,6 +737,16 @@ export default function MapScreen() {
 
   // Safety check: ensure chargingStations is always an array
   const safeChargingStations = chargingStations || [];
+  
+  // Performance monitoring - log render performance with stations
+  useEffect(() => {
+    const renderStart = performance.now();
+    const cleanup = () => {
+      const renderEnd = performance.now();
+      console.log(`🚀 MapScreen rendered ${safeChargingStations.length} stations in ${(renderEnd - renderStart).toFixed(2)}ms`);
+    };
+    return cleanup;
+  }, [safeChargingStations.length]);
   
   // Dynamic map region state
   const [mapRegion, setMapRegion] = useState<Region>(FALLBACK_REGION);
@@ -892,15 +930,61 @@ export default function MapScreen() {
                   />
                 </View>
               </View>
-              <Text style={styles.progressText}>
-                {xpToNextLevel ? `${xpToNextLevel - totalXP} XP to next level` : 'MAX LEVEL REACHED!'}
-              </Text>
-            </View>
-          </View>
-        </View>
-        
-        <Text style={styles.privacyText}>
-          🇪🇺 Privacy-First • Stockholm Data • {safeChargingStations.length} Stations Loaded
+                           <Text style={styles.progressText}>
+               {xpToNextLevel ? `${xpToNextLevel - totalXP} XP to next level` : 'MAX LEVEL REACHED!'}
+             </Text>
+           </View>
+           
+                       {/* Treasure Preview (Level 3+ Unlock) */}
+            {currentLevel >= 3 && (
+              <View style={styles.treasurePreview}>
+                <View style={styles.treasureBorder}>
+                  <View style={styles.treasureContent}>
+                    <View style={styles.treasureIcon}>
+                      <Text style={styles.treasureEmoji}>💎</Text>
+                    </View>
+                    <View style={styles.treasureInfo}>
+                      <Text style={styles.treasureTitle}>TREASURE PREVIEW</Text>
+                      <Text style={styles.treasureCount}>
+                        {safeChargingStations.filter(s => s.isDiscovered).length} Treasures Available
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+            
+            {/* Energy Radar (Level 2+ Unlock) */}
+            {currentLevel >= 2 && nearestStation && (
+             <View style={styles.energyRadar}>
+               <View style={styles.radarBorder}>
+                 <View style={styles.radarContent}>
+                   <View style={styles.radarIcon}>
+                     <Text style={styles.radarEmoji}>📡</Text>
+                   </View>
+                   <View style={styles.radarInfo}>
+                     <Text style={styles.radarTitle}>ENERGY RADAR</Text>
+                     <Text style={styles.radarDistance}>
+                       {nearestStation.distance < 1000 
+                         ? `${nearestStation.distance}m` 
+                         : `${(nearestStation.distance / 1000).toFixed(1)}km`}
+                     </Text>
+                     <Text style={styles.radarLocation}>
+                       {nearestStation.station.title.length > 20 
+                         ? nearestStation.station.title.substring(0, 20) + '...'
+                         : nearestStation.station.title}
+                     </Text>
+                   </View>
+                 </View>
+               </View>
+             </View>
+           )}
+         </View>
+       </View>
+       
+               <Text style={styles.privacyText}>
+          🇪🇺 Privacy-First • Stockholm Data • 
+          {isLoading ? 'Loading...' : `${safeChargingStations.length} Stations Loaded`}
         </Text>
         
         {/* Enhanced Pixel Art Control Buttons */}
@@ -1701,6 +1785,105 @@ const styles = StyleSheet.create({
   nesCancelText: {
     color: '#ffffff',
     fontSize: 10,
+    fontFamily: 'monospace',
+  },
+  
+  // Energy Radar (Level 2+ Feature)
+  energyRadar: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  radarBorder: {
+    backgroundColor: '#0a4a0a',
+    borderWidth: 2,
+    borderColor: '#00ff00',
+    borderRadius: 0,
+    padding: 6,
+    minWidth: 200,
+  },
+  radarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  radarIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#003300',
+    borderWidth: 1,
+    borderColor: '#00aa00',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  radarEmoji: {
+    fontSize: 12,
+  },
+  radarInfo: {
+    flex: 1,
+  },
+  radarTitle: {
+    color: '#00ff00',
+    fontSize: 8,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    marginBottom: 2,
+  },
+  radarDistance: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  radarLocation: {
+    color: '#cccccc',
+    fontSize: 8,
+    fontFamily: 'monospace',
+  },
+  
+  // Treasure Preview (Level 3+ Feature)
+  treasurePreview: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  treasureBorder: {
+    backgroundColor: '#4a0a4a',
+    borderWidth: 2,
+    borderColor: '#ff00ff',
+    borderRadius: 0,
+    padding: 6,
+    minWidth: 200,
+  },
+  treasureContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  treasureIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#330033',
+    borderWidth: 1,
+    borderColor: '#aa00aa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  treasureEmoji: {
+    fontSize: 12,
+  },
+  treasureInfo: {
+    flex: 1,
+  },
+  treasureTitle: {
+    color: '#ff00ff',
+    fontSize: 8,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    marginBottom: 2,
+  },
+  treasureCount: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
     fontFamily: 'monospace',
   },
 }); 

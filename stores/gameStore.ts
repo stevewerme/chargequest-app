@@ -473,10 +473,25 @@ export const useGameStore = create<GameState>()(
           xpToNextLevel: nextLevelXP,
         });
         
-        // Level up celebration
+        // Level up celebration with feature unlock notifications
         if (leveledUp) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           console.log(`🎉 Level Up! You are now ${levelInfo.title}!`);
+          
+          // Feature unlock notifications
+          const unlockMessages: { [key: number]: string } = {
+            2: '🎉 ENERGY RADAR UNLOCKED!\nTrack nearest undiscovered stations',
+            3: '🎉 TREASURE PREVIEW UNLOCKED!\nSee rewards at discovered stations',
+            4: '🎉 EXPLORER\'S EYE UNLOCKED!\nHighlight stations not visited recently',
+            5: '🎉 MASTER TRACKER UNLOCKED!\nPersonal discovery statistics available'
+          };
+          
+          if (unlockMessages[newLevel]) {
+            // Store level up message for UI display
+            setTimeout(() => {
+              console.log(unlockMessages[newLevel]);
+            }, 500);
+          }
         }
         
         // Log XP gain for debugging
