@@ -390,9 +390,21 @@ interface ClaimPopoverProps {
 function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverProps) {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  // Press and hold claim state
+  const [claimProgress, setClaimProgress] = useState(0); // 0 to 1
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const claimTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (visible) {
+      // Reset claim state when popover opens
+      setClaimProgress(0);
+      setIsClaiming(false);
+      setIsCompleted(false);
+      
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -407,6 +419,19 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
         }),
       ]).start();
     } else {
+      // Clear any ongoing claim process when popover closes
+      if (claimTimerRef.current) {
+        clearTimeout(claimTimerRef.current);
+        claimTimerRef.current = null;
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      setClaimProgress(0);
+      setIsClaiming(false);
+      setIsCompleted(false);
+      
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -421,6 +446,79 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
       ]).start();
     }
   }, [visible, fadeAnim, slideAnim]);
+
+  // Press and hold claim handlers
+  const startClaim = () => {
+    if (isCompleted) return; // Prevent multiple claims
+    
+    setIsClaiming(true);
+    setClaimProgress(0);
+    
+    const startTime = Date.now();
+    const duration = 3000; // 3 seconds
+    
+    // Update progress every 50ms for smooth animation
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      setClaimProgress(progress);
+      
+      if (progress >= 1) {
+        // Claim completed!
+        completeClaim();
+      }
+    }, 50);
+    
+    // Backup timer to ensure completion after exactly 3 seconds
+    claimTimerRef.current = setTimeout(() => {
+      completeClaim();
+    }, duration);
+  };
+
+  const cancelClaim = () => {
+    if (isCompleted) return;
+    
+    // Clear timers
+    if (claimTimerRef.current) {
+      clearTimeout(claimTimerRef.current);
+      claimTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
+    // Reset state
+    setIsClaiming(false);
+    setClaimProgress(0);
+  };
+
+  const completeClaim = () => {
+    if (isCompleted) return;
+    
+    // Clear timers
+    if (claimTimerRef.current) {
+      clearTimeout(claimTimerRef.current);
+      claimTimerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
+    // Mark as completed
+    setIsCompleted(true);
+    setIsClaiming(false);
+    setClaimProgress(1);
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Brief delay to show "CLAIMED!" then execute claim
+    setTimeout(() => {
+      onClaim();
+    }, 500);
+  };
 
   if (!visible) return null;
 
@@ -440,11 +538,12 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
           ],
         },
       ]}
+      pointerEvents="auto"
     >
-      <View style={styles.nesPopoverContent}>
-        <View style={styles.popoverHeader}>
-          <Text style={styles.nesPopoverTitle}>ENERGY CELL DISCOVERED!</Text>
-        </View>
+              <View style={styles.nesPopoverContent} pointerEvents="auto">
+          <View style={styles.popoverHeader}>
+            <Text style={styles.nesPopoverTitle}>ENERGY CELL DISCOVERED!</Text>
+          </View>
         
         <View style={styles.locationInfo}>
           <View style={styles.locationIcon}>
@@ -453,20 +552,48 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
           <Text style={styles.nesLocationName}>{stationName}</Text>
         </View>
         
-        <TouchableOpacity style={styles.nesClaimButton} onPress={onClaim}>
-          <View style={styles.nesClaimBorder}>
-            <View style={styles.nesClaimInner}>
-              <Text style={styles.nesClaimIcon}>💎</Text>
-              <Text style={styles.nesClaimText}>CLAIM ENERGY</Text>
+                  <TouchableOpacity 
+            style={styles.nesClaimButton} 
+            onPressIn={startClaim}
+            onPressOut={cancelClaim}
+            activeOpacity={0.9}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            disabled={isCompleted}
+          >
+            <View style={styles.nesClaimBorder} pointerEvents="none">
+              <View style={[styles.nesClaimInner, {
+                backgroundColor: isCompleted ? '#00aa00' : 
+                  isClaiming ? '#008800' : '#00cc00'
+              }]} pointerEvents="none">
+                {/* Progress bar background */}
+                <View style={[
+                  styles.claimProgressBar,
+                  { width: `${claimProgress * 100}%` }
+                ]} />
+                
+                {/* Button content */}
+                <View style={styles.claimButtonContent}>
+                  <Text style={styles.nesClaimIcon}>💎</Text>
+                  <Text style={styles.nesClaimText}>
+                    {isCompleted ? 'CLAIMED!' : 
+                     isClaiming ? 'HOLD TO CLAIM...' : 
+                     'HOLD TO CLAIM'}
+                  </Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.nesCancelButton} onPress={onCancel}>
-          <View style={styles.nesCancelBorder}>
-            <Text style={styles.nesCancelText}>CANCEL</Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.nesCancelButton} 
+            onPress={onCancel}
+            activeOpacity={0.8}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={styles.nesCancelBorder} pointerEvents="none">
+              <Text style={styles.nesCancelText}>CANCEL</Text>
+            </View>
+          </TouchableOpacity>
       </View>
       
       {/* Popover arrow */}
@@ -551,7 +678,7 @@ function AnimatedEnergyCell({
     <TouchableOpacity onPress={handlePress} style={styles.energyCell}>
       {/* Enhanced discoverable glow effect */}
       {isDiscoverable && !isDiscovered && (
-        <Animated.View style={[
+      <Animated.View style={[
           styles.discoverableGlow,
           { transform: [{ scale: pulseAnim }] }
         ]} />
@@ -641,9 +768,9 @@ function AnimatedEnergyCell({
         </View>
         
 
-        
-        {/* Discovered indicator */}
-        {isDiscovered && (
+
+      {/* Discovered indicator */}
+      {isDiscovered && (
           <View style={styles.pixelDiscoveredIndicator} />
         )}
       </Animated.View>
@@ -663,6 +790,7 @@ export default function MapScreen() {
     startLocationTracking,
     completeUnlock,
     resetProgress,
+    signOut,
     currentLocation,
     isLoading,
     error,
@@ -718,6 +846,22 @@ export default function MapScreen() {
   const handleShowPopover = (stationId: string, stationName: string) => {
     setSelectedStation({ id: stationId, name: stationName });
     setPopoverVisible(true);
+    
+    // Force a tiny map region update centered on the tapped station
+    // This fixes the initial positioning issue
+    const tappedStation = safeChargingStations.find(s => s.id === stationId);
+    if (mapViewRef.current && tappedStation) {
+      setTimeout(() => {
+        if (mapViewRef.current && tappedStation) {
+          mapViewRef.current.animateToRegion({
+            latitude: tappedStation.latitude,
+            longitude: tappedStation.longitude,
+            latitudeDelta: mapRegion.latitudeDelta * 0.9, // Slightly zoom in to ensure visibility
+            longitudeDelta: mapRegion.longitudeDelta * 0.9,
+          }, 150); // Quick animation to refresh positions and center on station
+        }
+      }, 100);
+    }
   };
 
   const handleClosePopover = () => {
@@ -727,9 +871,6 @@ export default function MapScreen() {
 
   const handleClaim = () => {
     if (selectedStation) {
-      // Immediate haptic feedback for claim action
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
       completeUnlock(selectedStation.id);
       handleClosePopover();
     }
@@ -874,6 +1015,27 @@ export default function MapScreen() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout? Your game progress will be saved.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'default',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Failed to logout:', error);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (error && !locationPermissionGranted) {
     handlePermissionError();
   }
@@ -932,7 +1094,7 @@ export default function MapScreen() {
               </View>
                            <Text style={styles.progressText}>
                {xpToNextLevel ? `${xpToNextLevel - totalXP} XP to next level` : 'MAX LEVEL REACHED!'}
-             </Text>
+        </Text>
            </View>
            
                        {/* Treasure Preview (Level 3+ Unlock) */}
@@ -986,29 +1148,6 @@ export default function MapScreen() {
           🇪🇺 Privacy-First • Stockholm Data • 
           {isLoading ? 'Loading...' : `${safeChargingStations.length} Stations Loaded`}
         </Text>
-        
-        {/* Enhanced Pixel Art Control Buttons */}
-        <View style={styles.controlButtonsRow}>
-          {/* Reset Progress Button */}
-          <TouchableOpacity style={styles.nesButton} onPress={handleReset}>
-            <View style={styles.nesButtonBorder}>
-              <View style={styles.nesButtonInner}>
-                <Text style={styles.nesButtonIcon}>🔄</Text>
-                <Text style={styles.nesButtonText}>RESET</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          {/* Center on User Button */}
-          <TouchableOpacity style={styles.nesButton} onPress={handleCenterOnUser}>
-            <View style={styles.nesButtonBorder}>
-              <View style={styles.nesButtonInner}>
-                <Text style={styles.nesButtonIcon}>📍</Text>
-                <Text style={styles.nesButtonText}>CENTER</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
         
         {isLoading && (
           <Text style={styles.statusText}>Initializing...</Text>
@@ -1091,6 +1230,39 @@ export default function MapScreen() {
 
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
+
+      {/* Developer/Debug Control Buttons - Bottom positioned */}
+      <View style={styles.bottomControlButtons}>
+        {/* Reset Progress Button */}
+        <TouchableOpacity style={styles.nesButton} onPress={handleReset}>
+          <View style={styles.nesButtonBorder}>
+            <View style={styles.nesButtonInner}>
+              <Text style={styles.nesButtonIcon}>🔄</Text>
+              <Text style={styles.nesButtonText}>RESET</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        
+        {/* Center on User Button */}
+        <TouchableOpacity style={styles.nesButton} onPress={handleCenterOnUser}>
+          <View style={styles.nesButtonBorder}>
+            <View style={styles.nesButtonInner}>
+              <Text style={styles.nesButtonIcon}>📍</Text>
+              <Text style={styles.nesButtonText}>CENTER</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Logout Button */}
+        <TouchableOpacity style={styles.nesButton} onPress={handleLogout}>
+          <View style={styles.nesButtonBorder}>
+            <View style={styles.nesButtonInner}>
+              <Text style={styles.nesButtonIcon}>🚪</Text>
+              <Text style={styles.nesButtonText}>LOGOUT</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -1102,7 +1274,7 @@ const styles = StyleSheet.create({
   },
   header: {
     position: 'absolute',
-    top: 60,
+    top: 80,
     left: 0,
     right: 0,
     zIndex: 1000,
@@ -1443,11 +1615,13 @@ const styles = StyleSheet.create({
   // Popover styles
   popoverContainer: {
     position: 'absolute',
-    bottom: -80, // Above the crystal
-    left: -60, // Center relative to crystal
-    right: -60,
-    zIndex: 1000,
+    bottom: 100, // Higher positioning to avoid bottom buttons
+    left: -120, // Wider centering for better viewport fit
+    right: -120,
+    zIndex: 9999, // Much higher z-index to ensure it's above everything
     alignItems: 'center',
+    elevation: 10, // Android elevation for proper layering
+    pointerEvents: 'auto', // Ensure touch events work
   },
   popoverContent: {
     backgroundColor: '#000000',
@@ -1548,7 +1722,7 @@ const styles = StyleSheet.create({
   // Enhanced Pixel Art Header Styles
   pixelHeader: {
     position: 'absolute',
-    top: 50,
+    top: 70,
     left: 10,
     right: 10,
     zIndex: 1000,
@@ -1652,13 +1826,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   
-  // Enhanced NES-Style Control Buttons
-  controlButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 8,
-    paddingHorizontal: 20,
-  },
+
   nesButton: {
     minWidth: 80,
   },
@@ -1699,6 +1867,11 @@ const styles = StyleSheet.create({
     padding: 0,
     minWidth: 240,
     alignItems: 'center',
+    elevation: 15, // Even higher elevation for Android
+    shadowColor: '#000000', // iOS shadow for better visibility
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
   },
   popoverHeader: {
     backgroundColor: '#ffdd00',
@@ -1758,8 +1931,10 @@ const styles = StyleSheet.create({
     borderColor: '#009900',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    flexDirection: 'row',
+    position: 'relative',
+    overflow: 'hidden', // Ensure progress bar doesn't overflow
     alignItems: 'center',
+    justifyContent: 'center',
   },
   nesClaimIcon: {
     fontSize: 14,
@@ -1885,5 +2060,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     fontFamily: 'monospace',
+  },
+  
+  // Press and Hold Claim Styles
+  claimProgressBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#00ff00',
+    opacity: 0.6,
+    borderRadius: 0,
+  },
+  claimButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  
+  // Bottom Developer/Debug Control Buttons
+  bottomControlButtons: {
+    position: 'absolute',
+    bottom: 30, // Above the device UI
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    zIndex: 1000,
   },
 }); 

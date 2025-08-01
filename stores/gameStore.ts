@@ -5,6 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { ChargingStation, UserLocation, UserProgress } from '../types/ChargingStation';
 import { locationService } from '../services/locationService';
 import { nobilApi } from '../services/nobilApi';
+import { supabase, supabaseService, UserProgress as SupabaseUserProgress } from '../services/supabaseClient';
+import { appleAuthService } from '../services/appleAuth';
 
 // XP Progression System Constants
 const XP_REWARDS = {
@@ -181,6 +183,12 @@ interface GameState {
   levelDescription: string;
   xpToNextLevel: number | null;
   
+  // Supabase Integration
+  isCloudSyncEnabled: boolean;
+  currentUser: any | null;
+  isAuthenticated: boolean;
+  syncStatus: 'idle' | 'syncing' | 'error' | 'success';
+  
   // UI State
   isLoading: boolean;
   error: string | null;
@@ -198,6 +206,16 @@ interface GameState {
   resetProgress: () => Promise<void>;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
+  
+  // Supabase Actions
+  initializeSupabase: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string) => Promise<boolean>;
+  signInWithApple: () => Promise<boolean>;
+  signOut: () => Promise<void>;
+  syncToCloud: () => Promise<void>;
+  loadFromCloud: () => Promise<void>;
+  migrateLocalData: () => Promise<void>;
 }
 
 export const useGameStore = create<GameState>()(
@@ -217,6 +235,12 @@ export const useGameStore = create<GameState>()(
       levelTitle: "Energy Seeker",
       levelDescription: "Starting your exploration journey",
       xpToNextLevel: 300, // XP needed for level 2
+      
+      // Supabase Integration Initial State
+      isCloudSyncEnabled: false,
+      currentUser: null,
+      isAuthenticated: false,
+      syncStatus: 'idle' as const,
       
       isLoading: false,
       error: null,
@@ -435,6 +459,15 @@ export const useGameStore = create<GameState>()(
 
         // Award XP after state update
         awardXP(xpReward, xpReason);
+        
+        // Sync to cloud if user is authenticated
+        const { isAuthenticated } = get();
+        if (isAuthenticated) {
+          // Sync in background without blocking UI
+          get().syncToCloud().catch(error => {
+            console.error('Background cloud sync failed:', error);
+          });
+        }
       },
 
       resetProgress: async () => {
@@ -497,6 +530,274 @@ export const useGameStore = create<GameState>()(
         // Log XP gain for debugging
         if (reason) {
           console.log(`+${amount} XP: ${reason} (Total: ${newTotalXP} XP, Level ${newLevel})`);
+        }
+      },
+
+      // Supabase Integration Functions
+      initializeSupabase: async () => {
+        try {
+          // Check for existing session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            set({ 
+              currentUser: session.user,
+              isAuthenticated: true,
+              isCloudSyncEnabled: true 
+            });
+            // Load cloud data
+            await get().loadFromCloud();
+          }
+        } catch (error) {
+          console.error('Failed to initialize Supabase:', error);
+        }
+      },
+
+      signIn: async (email: string, password: string): Promise<boolean> => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (error) throw error;
+          
+          if (data.user) {
+            set({ 
+              currentUser: data.user,
+              isAuthenticated: true,
+              isCloudSyncEnabled: true,
+              error: null 
+            });
+            
+            // Load cloud data after successful sign in
+            await get().loadFromCloud();
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
+          set({ error: errorMessage });
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      signUp: async (email: string, password: string): Promise<boolean> => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          
+          if (error) throw error;
+          
+          if (data.user) {
+            set({ 
+              currentUser: data.user,
+              isAuthenticated: true,
+              isCloudSyncEnabled: true,
+              error: null 
+            });
+            
+            // Create initial cloud profile with local data
+            await get().migrateLocalData();
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+          set({ error: errorMessage });
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      signInWithApple: async (): Promise<boolean> => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const result = await appleAuthService.signInWithApple();
+          
+          if (result.success && result.data) {
+            set({ 
+              currentUser: result.data.user,
+              isAuthenticated: true,
+              isCloudSyncEnabled: true,
+              error: null 
+            });
+            
+            // Load cloud data after successful sign in
+            await get().loadFromCloud();
+            return true;
+          } else {
+            set({ error: result.error || 'Apple Sign-In failed' });
+            return false;
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Apple Sign-In failed';
+          set({ error: errorMessage });
+          return false;
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      signOut: async () => {
+        try {
+          await supabase.auth.signOut();
+          set({ 
+            currentUser: null,
+            isAuthenticated: false,
+            isCloudSyncEnabled: false,
+            syncStatus: 'idle' as const
+          });
+        } catch (error) {
+          console.error('Sign out failed:', error);
+        }
+      },
+
+      syncToCloud: async () => {
+        const { currentUser, totalXP, currentLevel, discoveredStations, chargingStations } = get();
+        
+        if (!currentUser) {
+          console.log('No user logged in, skipping cloud sync');
+          return;
+        }
+        
+        set({ syncStatus: 'syncing' as const });
+        
+        try {
+          // Get or create user progress
+          let userProgress = await supabaseService.getUserProgress(currentUser.id);
+          
+          if (!userProgress) {
+            // Create new user progress
+            userProgress = await supabaseService.createUserProgress(currentUser.id, {
+              total_xp: totalXP,
+              current_level: currentLevel,
+              discovered_stations: discoveredStations,
+            });
+          } else {
+            // Update existing user progress
+            userProgress = await supabaseService.updateUserProgress(currentUser.id, {
+              total_xp: totalXP,
+              current_level: currentLevel,
+              discovered_stations: discoveredStations,
+            });
+          }
+          
+          // Add station discoveries for new discoveries
+          const existingDiscoveries = await supabaseService.getUserDiscoveries(currentUser.id);
+          const existingStationIds = new Set(existingDiscoveries.map(d => d.station_id));
+          
+          for (const stationId of discoveredStations) {
+            if (!existingStationIds.has(stationId)) {
+              const station = chargingStations.find(s => s.id === stationId);
+              if (station) {
+                await supabaseService.addStationDiscovery({
+                  user_id: currentUser.id,
+                  station_id: stationId,
+                  latitude: station.latitude,
+                  longitude: station.longitude,
+                  xp_awarded: 100, // Default XP for discovery
+                  bonus_type: undefined,
+                });
+              }
+            }
+          }
+          
+          set({ syncStatus: 'success' as const });
+          console.log('✅ Cloud sync completed successfully');
+          
+        } catch (error) {
+          console.error('❌ Cloud sync failed:', error);
+          set({ syncStatus: 'error' as const });
+        }
+      },
+
+      loadFromCloud: async () => {
+        const { currentUser } = get();
+        
+        if (!currentUser) {
+          console.log('No user logged in, skipping cloud load');
+          return;
+        }
+        
+        set({ syncStatus: 'syncing' as const });
+        
+        try {
+          const userProgress = await supabaseService.getUserProgress(currentUser.id);
+          
+          if (userProgress) {
+            // Update local state with cloud data
+            const levelInfo = getLevelInfo(userProgress.current_level);
+            const nextLevelXP = getNextLevelXP(userProgress.current_level);
+            
+            set({
+              totalXP: userProgress.total_xp,
+              currentLevel: userProgress.current_level,
+              levelTitle: levelInfo.title,
+              levelDescription: levelInfo.description,
+              xpToNextLevel: nextLevelXP,
+              discoveredStations: userProgress.discovered_stations,
+              totalDiscovered: userProgress.discovered_stations.length,
+              syncStatus: 'success' as const,
+            });
+            
+            console.log('✅ Cloud data loaded successfully');
+          }
+          
+        } catch (error) {
+          console.error('❌ Cloud load failed:', error);
+          set({ syncStatus: 'error' as const });
+        }
+      },
+
+      migrateLocalData: async () => {
+        const { currentUser, totalXP, currentLevel, discoveredStations } = get();
+        
+        if (!currentUser) {
+          console.log('No user logged in, skipping migration');
+          return;
+        }
+        
+        try {
+          // Create user progress with current local data
+          await supabaseService.createUserProgress(currentUser.id, {
+            total_xp: totalXP,
+            current_level: currentLevel,
+            discovered_stations: discoveredStations,
+          });
+          
+          // Add existing discoveries
+          const { chargingStations } = get();
+          for (const stationId of discoveredStations) {
+            const station = chargingStations.find(s => s.id === stationId);
+            if (station) {
+              await supabaseService.addStationDiscovery({
+                user_id: currentUser.id,
+                station_id: stationId,
+                latitude: station.latitude,
+                longitude: station.longitude,
+                xp_awarded: 100,
+                bonus_type: undefined,
+              });
+            }
+          }
+          
+          console.log('✅ Local data migrated to cloud successfully');
+          
+        } catch (error) {
+          console.error('❌ Migration failed:', error);
+          throw error;
         }
       },
 

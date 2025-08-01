@@ -40,10 +40,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "chargequest-app",
     "extra": {
       "eas": {
         "projectId": "caeeac26-7367-4bbe-b554-f56b42a09f53"
       }
-    }
+    },
+    "plugins": []
   }
 }

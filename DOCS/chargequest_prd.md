@@ -71,17 +71,36 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - **Migration benefits**: Multi-device support, user analytics, and cloud backup
 - **Risk mitigation**: Local state provides reliable fallback and faster development cycles
 
+### Database Schema (Supabase)
+```sql
+-- Core tables for user progress and discoveries
+user_progress (user_id, total_xp, current_level, discovered_stations[])
+station_discoveries (user_id, station_id, discovered_at, xp_awarded, bonus_type)
+treasures (station_id, treasure_type, value, expires_at) -- Future expansion
+user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansion
+```
+- **Row Level Security**: User data isolation with Supabase Auth integration
+- **Real-time sync**: Multi-device progress synchronization
+- **Treasure system foundation**: Database structure ready for rewards implementation
+
 ### Key Dependencies
 ```json
 {
   "react-native-maps": "latest",
   "expo-location": "latest",
-  "@react-native-async-storage/async-storage": "latest (primary storage Week 4-5)",
+  "@react-native-async-storage/async-storage": "latest (primary storage Week 4-5)",  
   "expo-haptics": "latest",
   "zustand": "latest (with persist middleware)",
   "@supabase/supabase-js": "latest (Week 6 migration)"
 }
 ```
+
+### Development Tooling (MCP Integration)
+- **Direct Database Access**: `mcp_supabase_apply_migration` for schema management
+- **Real-time SQL Execution**: `mcp_supabase_execute_sql` for testing and debugging
+- **Type Generation**: `mcp_supabase_generate_typescript_types` for automatic type safety
+- **Monitoring**: `mcp_supabase_get_logs` and `mcp_supabase_get_advisors` for development insights
+- **Rapid Iteration**: Direct database operations without leaving development environment
 
 ## XP Progression System
 
@@ -112,11 +131,12 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - **Real data integration**: Stockholm charging stations with local XP tracking
 - **User benefit**: Fast, reliable progression system with instant responsiveness
 
-### Supabase Migration (Week 6)
+### Supabase Migration (Week 6 - MCP Enhanced)
+- **MCP-Powered Setup**: Direct database schema creation using `mcp_supabase_apply_migration`
 - **Zero data loss**: Automatic detection and migration of local progress on first cloud login
-- **Migration process**: Read local AsyncStorage → Upload to Supabase → Verify sync → Clear local cache
-- **Fallback protection**: Local data retained until successful cloud verification
-- **Enhanced features**: Multi-device sync, user analytics, and cloud backup unlock
+- **Migration process**: Read local AsyncStorage → Upload via MCP tools → Verify sync → Clear local cache
+- **Real-time debugging**: Use `mcp_supabase_get_logs` and `mcp_supabase_execute_sql` for development
+- **Enhanced features**: Multi-device sync, user analytics, cloud backup, and treasure system foundation
 
 ## User Journey
 
@@ -202,12 +222,12 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 - [x] Error handling and loading states with retry logic and caching
 - [x] Performance optimization for large datasets with offline fallbacks
 
-### Week 6: Backend Integration & Migration
-- [ ] Supabase project setup and authentication
-- [ ] Implement zero-data-loss migration from local AsyncStorage to cloud
-- [ ] User profiles and cross-device progress synchronization
-- [ ] Treasure system with digital rewards
-- [ ] Migration testing with existing local user data
+### Week 6: Backend Integration & Migration (Using Supabase MCP)
+- [x] **6A: Database Setup** - Schema creation using `mcp_supabase_apply_migration`
+- [x] **6B: Authentication** - Supabase Auth integration with email/password
+- [ ] **6C: Data Sync** - Zero-data-loss migration with conflict resolution
+- [ ] **6D: Testing** - Multi-device sync and performance validation
+- [ ] **Treasure System Foundation** - Database schema for future rewards system
 
 ### Week 7-8: Launch Preparation
 - [ ] Push notification system
