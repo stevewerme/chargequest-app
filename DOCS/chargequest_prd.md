@@ -222,7 +222,8 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [x] Integrate real data with existing local XP progression system
 - [x] Error handling and loading states with retry logic and caching
 - [x] Performance optimization for large datasets with offline fallbacks
-- [x] **API Key Integration** - Live Nobil API now active with real Stockholm charging station data
+- [x] **API Key Integration** - Live Nobil API fully integrated with location-based filtering
+- [x] **Location Intelligence** - Nearest 10 stations discovery with smart map bounds
 
 ### Week 6: Backend Integration & Migration (Using Supabase MCP) ✅
 - [x] **6A: Database Setup** - Schema creation using `mcp_supabase_apply_migration`
@@ -238,7 +239,14 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [x] **7D: Logout System** - Complete authentication flow with progress preservation
 - [x] **7E: UX Bug Fixes** - Resolved unlock button z-index issues and popover positioning
 
-### Week 7-8: Launch Preparation
+### Week 8: Live Data Integration & Location Intelligence ✅
+- [x] **8A: Nobil API v3 Integration** - Rectangle-based search with Stockholm bounding box coordinates
+- [x] **8B: Location-Based Discovery** - Nearest 10 stations filtering with GPS distance calculation
+- [x] **8C: Smart Map Auto-Zoom** - Automatic bounds calculation and optimal view framing
+- [x] **8D: Enhanced Error Handling** - Comprehensive validation and debugging pipeline
+- [x] **8E: Performance Optimization** - Reduced data load with intelligent caching
+
+### Week 8-9: Launch Preparation
 - [ ] Push notification system
 - [ ] Beta testing with real users
 - [ ] Performance monitoring and optimization
@@ -271,12 +279,14 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [ ] App passed testing with 10+ beta users
 - [ ] Performance metrics meet acceptable thresholds
 
-## Current Status (Week 7.5 Complete)
+## Current Status (Week 8.0 Complete)
 - ✅ **Authentication System**: Native Apple Sign-In fully functional
 - ✅ **Core Gameplay**: Discovery, XP progression, level unlocks working
 - ✅ **Data Persistence**: Local storage with cloud sync capability
 - ✅ **Professional UX**: Polished login screen and interaction flows
-- ✅ **Real Data Integration**: Live Nobil API with Stockholm charging stations
+- ✅ **Live Data Integration**: Nobil API v3 with Stockholm charging stations
+- ✅ **Location Intelligence**: User-centered discovery with nearest 10 stations
+- ✅ **Smart Map Features**: Auto-zoom and optimal bounds calculation
 - ⏳ **Next Phase**: Treasure system implementation and beta testing
 
 ## 🛠️ **Manual Implementation Steps**
