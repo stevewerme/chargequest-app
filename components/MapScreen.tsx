@@ -8,6 +8,117 @@ import { ChargingStation } from '../types/ChargingStation';
 
 const { width, height } = Dimensions.get('window');
 
+// Portrait avatar version (head and upper body)
+const PixelAvatarPortrait = () => {
+  return (
+    <View style={styles.pixelAvatar}>
+      {/* Row 1 - Hair top with outline */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 2 - Hair outline and brown */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 3 - More hair */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelBrownLight]} />
+        <View style={[styles.pixel, styles.pixelBrownDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 4 - Forehead */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 5 - Eyes */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelBlack]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 6 - Nose/mouth */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkinDark]} />
+        <View style={[styles.pixel, styles.pixelSkin]} />
+        <View style={[styles.pixel, styles.pixelSkinLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+      
+      {/* Row 7 - Shirt top */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.transparent]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedDark]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.transparent]} />
+      </View>
+      
+      {/* Row 8 - Shirt middle */}
+      <View style={styles.characterRow}>
+        <View style={[styles.pixel, styles.pixelOutline]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelRed]} />
+        <View style={[styles.pixel, styles.pixelRedLight]} />
+        <View style={[styles.pixel, styles.pixelOutline]} />
+      </View>
+    </View>
+  );
+};
+
 // Exact recreation of user's reference character
 const PixelArtCharacter = () => {
   return (
@@ -520,9 +631,7 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
     }, 500);
   };
 
-  if (!visible) return null;
-
-  return (
+  return visible ? (
     <Animated.View 
       style={[
         styles.popoverContainer,
@@ -599,7 +708,7 @@ function ClaimPopover({ visible, stationName, onClaim, onCancel }: ClaimPopoverP
       {/* Popover arrow */}
       <View style={styles.popoverArrow} />
     </Animated.View>
-  );
+  ) : null;
 }
 
 // Animated Energy Cell Component
@@ -625,17 +734,18 @@ function AnimatedEnergyCell({
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (!isDiscovered && !isUnlocking) {
+    if (isDiscoverable && !isDiscovered && !isUnlocking) {
+      // Gentle breathing animation for purple crystals only
       const pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 1500,
+            toValue: 1.08, // Smaller scale change for subtle breathing
+            duration: 1000, // 2-second cycle (1 second up, 1 second down)
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 1500,
+            duration: 1000,
             useNativeDriver: true,
           }),
         ])
@@ -650,7 +760,7 @@ function AnimatedEnergyCell({
       // Reset animation when not pulsing
       pulseAnim.setValue(1);
     }
-  }, [isDiscovered, isUnlocking, pulseAnim]);
+  }, [isDiscovered, isDiscoverable, isUnlocking, pulseAnim]);
 
   const handlePress = () => {
     if (isDiscovered || isUnlocking) {
@@ -664,9 +774,9 @@ function AnimatedEnergyCell({
   };
 
   const getCrystalColors = () => {
-    if (isDiscovered) return { base: '#0088ff', light: '#00aaff', dark: '#0066cc' };
-    if (isDiscoverable) return { base: '#ffdd00', light: '#ffff44', dark: '#ffaa00' }; // Much brighter yellow
-    return { base: '#00ff88', light: '#33ffaa', dark: '#00cc66' };
+    if (isDiscovered) return { base: '#00ff88', light: '#33ffaa', dark: '#00cc66' }; // Green - claimed/completed
+    if (isDiscoverable) return { base: '#8B4BBE', light: '#A855D4', dark: '#7C3AED' }; // Purple - active/interactive
+    return { base: '#DC2626', light: '#EF4444', dark: '#B91C1C' }; // Red - undiscovered/mysterious
   };
 
   const colors = getCrystalColors();
@@ -786,6 +896,7 @@ export default function MapScreen() {
     currentLevel,
     levelTitle,
     xpToNextLevel,
+    mapBounds,
     initializePermissions, 
     startLocationTracking,
     completeUnlock,
@@ -800,6 +911,7 @@ export default function MapScreen() {
   // Popover state
   const [popoverVisible, setPopoverVisible] = useState(false);
   const [selectedStation, setSelectedStation] = useState<{id: string, name: string} | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
 
   // XP Progress calculation
   const getXPProgress = () => {
@@ -895,6 +1007,20 @@ export default function MapScreen() {
 
   // MapView reference for coordinate conversions
   const mapViewRef = useRef<MapView>(null);
+
+  // Auto-fit map to show nearest stations when bounds change
+  useEffect(() => {
+    if (mapBounds && mapViewRef.current) {
+      console.log('🎯 Auto-fitting map to nearest stations bounds');
+      mapViewRef.current.fitToCoordinates([
+        mapBounds.northeast,
+        mapBounds.southwest
+      ], {
+        edgePadding: { top: 150, right: 50, bottom: 200, left: 50 },
+        animated: true,
+      });
+    }
+  }, [mapBounds]);
 
   // Get discovered stations for reveals  
   const getDiscoveredStations = () => {
@@ -1042,119 +1168,42 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-            {/* Pixel Art Header Interface - Shop Style */}
-      <View style={styles.pixelHeader}>
-        {/* Main Header Panel */}
-        <View style={styles.headerPanel}>
-          <View style={styles.headerBorder}>
-            <Text style={styles.pixelTitle}>CHARGEQUEST</Text>
-            
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <View style={styles.pixelIcon}>
-                  <Text style={styles.iconText}>⚡</Text>
-                </View>
-                <Text style={styles.statText}>{totalDiscovered}/{safeChargingStations.length}</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <View style={styles.pixelIcon}>
-                  <Text style={styles.iconText}>🏆</Text>
-                </View>
-                <Text style={styles.statText}>LVL {currentLevel}</Text>
-              </View>
-              
-              <View style={styles.statItem}>
-                <View style={styles.pixelIcon}>
-                  <Text style={styles.iconText}>💎</Text>
-                </View>
-                <Text style={styles.statText}>{totalXP} XP</Text>
-              </View>
-            </View>
-            
-            {/* Level Progress Banner */}
-            <View style={styles.levelBanner}>
-              <View style={styles.bannerBorder}>
-                <Text style={styles.levelBannerText}>{levelTitle.toUpperCase()}</Text>
-              </View>
-            </View>
-            
-            {/* XP Progress Bar - Pixel Art Style */}
-            <View style={styles.pixelProgressContainer}>
-              <View style={styles.pixelProgressBorder}>
-                <View style={styles.pixelProgressTrack}>
-                  <View 
-                    style={[
-                      styles.pixelProgressFill, 
-                      { width: `${getXPProgress()}%` }
-                    ]} 
-                  />
-                </View>
-              </View>
-                           <Text style={styles.progressText}>
-               {xpToNextLevel ? `${xpToNextLevel - totalXP} XP to next level` : 'MAX LEVEL REACHED!'}
-        </Text>
-           </View>
-           
-                       {/* Treasure Preview (Level 3+ Unlock) */}
-            {currentLevel >= 3 && (
-              <View style={styles.treasurePreview}>
-                <View style={styles.treasureBorder}>
-                  <View style={styles.treasureContent}>
-                    <View style={styles.treasureIcon}>
-                      <Text style={styles.treasureEmoji}>💎</Text>
-                    </View>
-                    <View style={styles.treasureInfo}>
-                      <Text style={styles.treasureTitle}>TREASURE PREVIEW</Text>
-                      <Text style={styles.treasureCount}>
-                        {safeChargingStations.filter(s => s.isDiscovered).length} Treasures Available
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
-            
-            {/* Energy Radar (Level 2+ Unlock) */}
-            {currentLevel >= 2 && nearestStation && (
-             <View style={styles.energyRadar}>
-               <View style={styles.radarBorder}>
-                 <View style={styles.radarContent}>
-                   <View style={styles.radarIcon}>
-                     <Text style={styles.radarEmoji}>📡</Text>
-                   </View>
-                   <View style={styles.radarInfo}>
-                     <Text style={styles.radarTitle}>ENERGY RADAR</Text>
-                     <Text style={styles.radarDistance}>
-                       {nearestStation.distance < 1000 
-                         ? `${nearestStation.distance}m` 
-                         : `${(nearestStation.distance / 1000).toFixed(1)}km`}
-                     </Text>
-                     <Text style={styles.radarLocation}>
-                       {nearestStation.station.title.length > 20 
-                         ? nearestStation.station.title.substring(0, 20) + '...'
-                         : nearestStation.station.title}
-                     </Text>
-                   </View>
-                 </View>
-               </View>
-             </View>
-           )}
-         </View>
-       </View>
-       
-               <Text style={styles.privacyText}>
-          🇪🇺 Privacy-First • Stockholm Data • 
-          {isLoading ? 'Loading...' : `${safeChargingStations.length} Stations Loaded`}
-        </Text>
+            {/* Centered Header with Logo and Progress */}
+      <View style={styles.cohesiveHeader}>
+        {/* Header row: Logo only */}
+        <View style={styles.headerTopRow}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoIcon}>⚡</Text>
+            <Text style={styles.logoCharge}>CHARGE</Text>
+            <Text style={styles.logoQuest}>QUEST</Text>
+            <Text style={styles.logoIconEnd}>⚡</Text>
+          </View>
+        </View>
         
-        {isLoading && (
-          <Text style={styles.statusText}>Initializing...</Text>
-        )}
-        {error && (
-          <Text style={styles.errorText}>{error}</Text>
-        )}
+        {/* Bottom row: Level, XP bar, and XP numbers */}
+        <View style={styles.headerBottomRow}>
+          <Text style={styles.levelText}>Level {currentLevel}</Text>
+          
+          {/* 10-segment XP progress bar */}
+          <View style={styles.xpBarContainer}>
+            {Array.from({ length: 10 }, (_, index) => {
+              const segmentFilled = (getXPProgress() / 100) * 10 > index;
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.xpSegment,
+                    segmentFilled ? styles.xpSegmentFilled : styles.xpSegmentEmpty
+                  ]}
+                />
+              );
+            })}
+          </View>
+          
+          <Text style={styles.xpNumbers}>
+            {totalXP}{xpToNextLevel ? `/${xpToNextLevel}` : ''} XP
+          </Text>
+        </View>
       </View>
 
       {/* Map with pristine native components - no fog interference */}
@@ -1190,8 +1239,6 @@ export default function MapScreen() {
                 latitude: station.latitude,
                 longitude: station.longitude,
               }}
-              title={station.title}
-              description={station.description}
               anchor={{ x: 0.5, y: 0.5 }}
               centerOffset={{ x: 0, y: 0 }}
             >
@@ -1204,16 +1251,6 @@ export default function MapScreen() {
                 stationName={station.title}
                 onShowPopover={handleShowPopover}
               />
-              
-              {/* Popover attached to this crystal */}
-              {selectedStation?.id === station.id && (
-                <ClaimPopover
-                  visible={popoverVisible}
-                  stationName={selectedStation.name}
-                  onClaim={handleClaim}
-                  onCancel={handleClosePopover}
-                />
-              )}
             </Marker>
           ))}
 
@@ -1221,7 +1258,15 @@ export default function MapScreen() {
         </MapView>
       </View>
 
-
+      {/* Claim Popover - Positioned at screen level to avoid UI conflicts */}
+      {popoverVisible && selectedStation && (
+        <ClaimPopover
+          visible={popoverVisible}
+          stationName={selectedStation.name}
+          onClaim={handleClaim}
+          onCancel={handleClosePopover}
+        />
+      )}
 
       {/* Simple fog overlay - basic atmospheric dimming */}
       <View style={styles.fogOverlay} pointerEvents="none">
@@ -1231,38 +1276,69 @@ export default function MapScreen() {
       {/* Additional mystery vignette */}
       <View style={styles.vignette} pointerEvents="none" />
 
-      {/* Developer/Debug Control Buttons - Bottom positioned */}
-      <View style={styles.bottomControlButtons}>
-        {/* Reset Progress Button */}
-        <TouchableOpacity style={styles.nesButton} onPress={handleReset}>
-          <View style={styles.nesButtonBorder}>
-            <View style={styles.nesButtonInner}>
-              <Text style={styles.nesButtonIcon}>🔄</Text>
-              <Text style={styles.nesButtonText}>RESET</Text>
-            </View>
+      {/* Avatar Menu Button - Bottom Left */}
+      <TouchableOpacity 
+        style={styles.avatarMenuButton}
+        onPress={() => setShowMenu(!showMenu)}
+      >
+        <View style={styles.avatarMenuButtonBorder}>
+          <View style={styles.avatarMenuButtonInner}>
+            <PixelAvatarPortrait />
           </View>
-        </TouchableOpacity>
-        
-        {/* Center on User Button */}
-        <TouchableOpacity style={styles.nesButton} onPress={handleCenterOnUser}>
-          <View style={styles.nesButtonBorder}>
-            <View style={styles.nesButtonInner}>
-              <Text style={styles.nesButtonIcon}>📍</Text>
-              <Text style={styles.nesButtonText}>CENTER</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
 
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.nesButton} onPress={handleLogout}>
-          <View style={styles.nesButtonBorder}>
-            <View style={styles.nesButtonInner}>
-              <Text style={styles.nesButtonIcon}>🚪</Text>
-              <Text style={styles.nesButtonText}>LOGOUT</Text>
+      {/* Center Location Button - Bottom Right */}
+      <TouchableOpacity 
+        style={styles.centerLocationButton}
+        onPress={handleCenterOnUser}
+      >
+        <View style={styles.centerLocationButtonBorder}>
+          <View style={styles.centerLocationButtonInner}>
+            <Text style={styles.centerLocationButtonIcon}>📍</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {/* Centered Menu Modal */}
+      {showMenu && (
+        <TouchableOpacity 
+          style={styles.slideUpMenu}
+          onPress={() => setShowMenu(false)}
+          activeOpacity={1}
+        >
+          <View 
+            style={styles.menuModal}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.menuContent}>
+            {/* Reset Progress Button */}
+            <TouchableOpacity 
+              style={styles.menuButton} 
+              onPress={() => {
+                handleReset();
+                setShowMenu(false);
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>🔄</Text>
+              <Text style={styles.menuButtonText}>Reset Progress</Text>
+            </TouchableOpacity>
+
+            {/* Logout Button */}
+            <TouchableOpacity 
+              style={styles.menuButton} 
+              onPress={() => {
+                setShowMenu(false);
+                handleLogout();
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>🚪</Text>
+              <Text style={styles.menuButtonText}>Logout</Text>
+            </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 }
@@ -1612,15 +1688,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  // Popover styles
+  // Popover styles - Center on screen to avoid header and bottom UI
   popoverContainer: {
     position: 'absolute',
-    bottom: 100, // Higher positioning to avoid bottom buttons
-    left: -120, // Wider centering for better viewport fit
-    right: -120,
-    zIndex: 9999, // Much higher z-index to ensure it's above everything
+    top: '40%', // Position in middle area, avoiding header and bottom buttons
+    left: 20,
+    right: 20,
+    zIndex: 10000, // Higher than header (1000) and all other UI elements
     alignItems: 'center',
-    elevation: 10, // Android elevation for proper layering
+    elevation: 15, // Higher Android elevation
     pointerEvents: 'auto', // Ensure touch events work
   },
   popoverContent: {
@@ -1689,12 +1765,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
   },
-  levelText: {
-    color: '#ffdd00',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
   xpBar: {
     width: 200,
     marginBottom: 2,
@@ -1719,110 +1789,106 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   
-  // Enhanced Pixel Art Header Styles
-  pixelHeader: {
+  // Centered Header - Pixel Art Style
+  cohesiveHeader: {
     position: 'absolute',
     top: 70,
-    left: 10,
-    right: 10,
+    left: 20,
+    right: 20,
     zIndex: 1000,
-    alignItems: 'center',
-  },
-  headerPanel: {
-    backgroundColor: '#2a2a2a',
-    borderWidth: 3,
-    borderColor: '#ffdd00',
+    backgroundColor: '#2a2a2a', // Solid dark gray like NES buttons
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderRadius: 0, // Sharp pixel corners
-    padding: 12,
-    minWidth: 320,
+    borderWidth: 3,
+    borderTopColor: '#555555', // 3D bevel effect
+    borderLeftColor: '#555555',
+    borderRightColor: '#111111',
+    borderBottomColor: '#111111',
+    // Subtle shadow for depth
+    shadowColor: '#000000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 0, // Sharp shadow for pixel art
+    elevation: 8, // Android shadow
   },
-  headerBorder: {
-    borderWidth: 2,
-    borderColor: '#666666',
-    backgroundColor: '#1a1a1a',
-    padding: 8,
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the logo now that avatar is moved
+    marginBottom: 12,
   },
-  pixelTitle: {
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  logoIcon: {
     color: '#ffdd00',
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    fontFamily: 'monospace', // More pixel-like font
+    marginRight: 6,
   },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8,
-  },
-  statItem: {
-    alignItems: 'center',
-    minWidth: 60,
-  },
-  pixelIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#333333',
-    borderWidth: 2,
-    borderColor: '#666666',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  iconText: {
-    fontSize: 12,
-  },
-  statText: {
+  logoCharge: {
     color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+  },
+  logoQuest: {
+    color: '#00ff88',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+  },
+  logoIconEnd: {
+    color: '#ffdd00',
+    fontSize: 16,
+    marginLeft: 6,
+  },
+  // Avatar Menu Button - Bottom Left
+  avatarMenuButton: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    zIndex: 1000,
+  },
+  headerBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', // Center the progress info under the logo
+  },
+  levelText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    marginRight: 12, // Space between "Level 1" and progress bar
+  },
+  xpBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12, // Space between progress bar and XP numbers
+  },
+  xpSegment: {
+    width: 14,
+    height: 8,
+    borderWidth: 1,
+    borderColor: '#000000', // Black borders for more contrast
+    marginRight: 1,
+  },
+  xpSegmentFilled: {
+    backgroundColor: '#ffdd00',
+    borderColor: '#cc9900', // Darker border for filled segments
+  },
+  xpSegmentEmpty: {
+    backgroundColor: '#222222', // Darker empty background
+    borderColor: '#444444', // Subtle border for empty segments
+  },
+  xpNumbers: {
+    color: '#cccccc',
     fontSize: 11,
     fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
-  levelBanner: {
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  bannerBorder: {
-    backgroundColor: '#ffdd00',
-    borderWidth: 2,
-    borderColor: '#cc9900',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    borderRadius: 0,
-  },
-  levelBannerText: {
-    color: '#000000',
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
-  pixelProgressContainer: {
-    alignItems: 'center',
-  },
-  pixelProgressBorder: {
-    borderWidth: 2,
-    borderColor: '#666666',
-    backgroundColor: '#000000',
-    width: 200,
-    height: 16,
-    marginBottom: 4,
-  },
-  pixelProgressTrack: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#222222',
-    borderWidth: 1,
-    borderColor: '#444444',
-  },
-  pixelProgressFill: {
-    height: '100%',
-    backgroundColor: '#00ff00',
-    borderRightWidth: 2,
-    borderRightColor: '#00cc00',
-  },
-  progressText: {
-    color: '#cccccc',
-    fontSize: 9,
     fontFamily: 'monospace',
   },
   
@@ -1962,105 +2028,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'monospace',
   },
-  
-  // Energy Radar (Level 2+ Feature)
-  energyRadar: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  radarBorder: {
-    backgroundColor: '#0a4a0a',
-    borderWidth: 2,
-    borderColor: '#00ff00',
-    borderRadius: 0,
-    padding: 6,
-    minWidth: 200,
-  },
-  radarContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radarIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#003300',
-    borderWidth: 1,
-    borderColor: '#00aa00',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  radarEmoji: {
-    fontSize: 12,
-  },
-  radarInfo: {
-    flex: 1,
-  },
-  radarTitle: {
-    color: '#00ff00',
-    fontSize: 8,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginBottom: 2,
-  },
-  radarDistance: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
-  radarLocation: {
-    color: '#cccccc',
-    fontSize: 8,
-    fontFamily: 'monospace',
-  },
-  
-  // Treasure Preview (Level 3+ Feature)
-  treasurePreview: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  treasureBorder: {
-    backgroundColor: '#4a0a4a',
-    borderWidth: 2,
-    borderColor: '#ff00ff',
-    borderRadius: 0,
-    padding: 6,
-    minWidth: 200,
-  },
-  treasureContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  treasureIcon: {
-    width: 24,
-    height: 24,
-    backgroundColor: '#330033',
-    borderWidth: 1,
-    borderColor: '#aa00aa',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  treasureEmoji: {
-    fontSize: 12,
-  },
-  treasureInfo: {
-    flex: 1,
-  },
-  treasureTitle: {
-    color: '#ff00ff',
-    fontSize: 8,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-    marginBottom: 2,
-  },
-  treasureCount: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
+
   
   // Press and Hold Claim Styles
   claimProgressBar: {
@@ -2078,14 +2046,117 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   
-  // Bottom Developer/Debug Control Buttons
-  bottomControlButtons: {
+  // Avatar Portrait Styles
+  pixelAvatar: {
+    width: 27, // 9 pixels * 3px each = 27px
+    height: 24, // 8 rows * 3px each = 24px
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+
+  avatarMenuButtonBorder: {
+    backgroundColor: '#4a4a4a',
+    borderWidth: 3,
+    borderTopColor: '#888888',
+    borderLeftColor: '#888888', 
+    borderRightColor: '#222222',
+    borderBottomColor: '#222222',
+    borderRadius: 0,
+    padding: 4,
+  },
+  avatarMenuButtonInner: {
+    backgroundColor: '#666666',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 0,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Center Location Button - Bottom Right
+  centerLocationButton: {
     position: 'absolute',
-    bottom: 30, // Above the device UI
-    left: 20,
+    bottom: 40,
     right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     zIndex: 1000,
+  },
+  centerLocationButtonBorder: {
+    backgroundColor: '#4a4a4a',
+    borderWidth: 3,
+    borderTopColor: '#888888',
+    borderLeftColor: '#888888', 
+    borderRightColor: '#222222',
+    borderBottomColor: '#222222',
+    borderRadius: 0,
+    minWidth: 50,
+    minHeight: 50,
+  },
+  centerLocationButtonInner: {
+    backgroundColor: '#666666',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 0,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  centerLocationButtonIcon: {
+    fontSize: 20,
+  },
+
+  // Centered Menu Overlay
+  slideUpMenu: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent backdrop
+    paddingHorizontal: 20,
+    zIndex: 1500, // Higher z-index to be above everything
+    justifyContent: 'center', // Center the entire menu
+    alignItems: 'center',
+  },
+
+  menuModal: {
+    backgroundColor: 'rgba(42, 42, 42, 0.95)',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ffdd00',
+    padding: 20,
+    minWidth: 250,
+  },
+
+  menuContent: {
+    alignItems: 'center',
+  },
+
+  menuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    borderWidth: 2,
+    borderColor: '#666666',
+    borderRadius: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginVertical: 8, // More space between buttons
+    minWidth: 220,
+  },
+
+  menuButtonIcon: {
+    fontSize: 16,
+    marginRight: 12,
+  },
+
+  menuButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
 }); 

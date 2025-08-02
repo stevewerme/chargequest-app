@@ -6,29 +6,35 @@ const NOBIL_CONFIG = {
   COUNTRY: 'SE',
   MUNICIPALITY: 'Stockholm',
   FORMAT: 'json',
-  API_KEY: process.env.NOBIL_API_KEY || null, // Will be set when we get the key
-  USE_MOCK_DATA: true, // Switch to false when API key is ready
+  API_KEY: process.env.EXPO_PUBLIC_NOBIL_API_KEY || null, // Will be set when we get the key
+  USE_MOCK_DATA: false, // API key is ready! Switch to live data
   REQUEST_TIMEOUT: 10000,
   RETRY_ATTEMPTS: 3,
   CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
 };
 
-// Types matching Nobil API response structure
+// Types matching Nobil API v3 response structure (from documentation)
 interface NobilStation {
-  id: string;
-  name: string;
-  Position: {
-    lat: number;
-    lng: number;
+  csmd: {
+    id: number;
+    name: string;
+    Position: string; // Format: "(59.87447,10.49982)"
+    Street?: string;
+    House_number?: string;
+    City?: string;
+    Municipality?: string;
+    County?: string;
+    Description_of_location?: string;
+    Owned_by?: string;
+    Number_charging_points?: number;
+    Available_charging_points?: number;
+    Created?: string;
+    Updated?: string;
+    Station_status?: number;
+    Land_code?: string;
+    International_id?: string;
   };
-  operator?: string;
-  street?: string;
-  city?: string;
-  description?: string;
-  available?: boolean;
-  capacity?: number;
-  created?: string;
-  modified?: string;
+  attr?: any; // Complex attribute structure from docs
 }
 
 interface NobilApiResponse {
@@ -41,75 +47,56 @@ interface NobilApiResponse {
 let cachedData: ChargingStation[] | null = null;
 let cacheTimestamp: number = 0;
 
-// Mock Stockholm charging stations in Nobil format (realistic Stockholm locations)
+// Mock Stockholm charging stations in Nobil v3 format (realistic Stockholm locations)
 const MOCK_NOBIL_STATIONS: NobilStation[] = [
-  // Central Stockholm
-  { id: 'SE_STOCKHOLM_001', name: 'T-Centralen Station', Position: { lat: 59.3293, lng: 18.0686 }, operator: 'Recharge', street: 'Vasagatan', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_002', name: 'Gamla Stan Charger', Position: { lat: 59.3251, lng: 18.0711 }, operator: 'Recharge', street: 'Stortorget', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_003', name: 'Södermalm Energy Hub', Position: { lat: 59.3165, lng: 18.0740 }, operator: 'Recharge', street: 'Götgatan', city: 'Stockholm' },
-  
-  // Östermalm  
-  { id: 'SE_STOCKHOLM_004', name: 'Stureplan Premium', Position: { lat: 59.3346, lng: 18.0728 }, operator: 'Recharge', street: 'Birger Jarlsgatan', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_005', name: 'Östermalm Square', Position: { lat: 59.3378, lng: 18.0852 }, operator: 'Recharge', street: 'Östermalmstorg', city: 'Stockholm' },
-  
-  // Vasastan
-  { id: 'SE_STOCKHOLM_006', name: 'Odenplan Station', Position: { lat: 59.3434, lng: 18.0495 }, operator: 'Recharge', street: 'Odenplan', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_007', name: 'Vasastan Residential', Position: { lat: 59.3398, lng: 18.0456 }, operator: 'Recharge', street: 'Upplandsgatan', city: 'Stockholm' },
-  
-  // Norrmalm
-  { id: 'SE_STOCKHOLM_008', name: 'Sergels Torg Hub', Position: { lat: 59.3325, lng: 18.0632 }, operator: 'Recharge', street: 'Sergels Torg', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_009', name: 'Hötorget Market', Position: { lat: 59.3370, lng: 18.0604 }, operator: 'Recharge', street: 'Hötorget', city: 'Stockholm' },
-  
-  // Södermalm Extended
-  { id: 'SE_STOCKHOLM_010', name: 'Medborgarplatsen', Position: { lat: 59.3144, lng: 18.0731 }, operator: 'Recharge', street: 'Medborgarplatsen', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_011', name: 'Mariatorget Park', Position: { lat: 59.3170, lng: 18.0648 }, operator: 'Recharge', street: 'Mariatorget', city: 'Stockholm' },
-  
-  // Kungsholmen
-  { id: 'SE_STOCKHOLM_012', name: 'City Hall Charger', Position: { lat: 59.3275, lng: 18.0546 }, operator: 'Recharge', street: 'Hantverkargatan', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_013', name: 'Fridhemsplan Station', Position: { lat: 59.3338, lng: 18.0345 }, operator: 'Recharge', street: 'Fridhemsplan', city: 'Stockholm' },
-  
-  // Djurgården & Eastern Areas
-  { id: 'SE_STOCKHOLM_014', name: 'Djurgården Museum District', Position: { lat: 59.3247, lng: 18.0995 }, operator: 'Recharge', street: 'Djurgårdsbron', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_015', name: 'Gröna Lund Area', Position: { lat: 59.3233, lng: 18.0965 }, operator: 'Recharge', street: 'Allmänna gränd', city: 'Stockholm' },
-  
-  // Northern Stockholm
-  { id: 'SE_STOCKHOLM_016', name: 'Hagastaden Business', Position: { lat: 59.3521, lng: 18.0234 }, operator: 'Recharge', street: 'Solna väg', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_017', name: 'Karolinska Institute', Position: { lat: 59.3498, lng: 18.0278 }, operator: 'Recharge', street: 'Nobels väg', city: 'Stockholm' },
-  
-  // Söderort (Southern Suburbs)
-  { id: 'SE_STOCKHOLM_018', name: 'Skanstull Bridge', Position: { lat: 59.3089, lng: 18.0745 }, operator: 'Recharge', street: 'Skanstullsbron', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_019', name: 'Gullmarsplan Hub', Position: { lat: 59.2986, lng: 18.0820 }, operator: 'Recharge', street: 'Gullmarsplan', city: 'Stockholm' },
-  
-  // Västerort (Western Suburbs)  
-  { id: 'SE_STOCKHOLM_020', name: 'Vällingby Centrum', Position: { lat: 59.3619, lng: 17.8771 }, operator: 'Recharge', street: 'Vällingby Centrum', city: 'Stockholm' },
-  { id: 'SE_STOCKHOLM_021', name: 'Bromma Airport', Position: { lat: 59.3544, lng: 17.9417 }, operator: 'Recharge', street: 'Bromma Flygplats', city: 'Stockholm' },
-  
-  // Original Töjnan area (keeping our test locations)
-  { id: 'SE_STOCKHOLM_022', name: 'Hjortvägen/Fjällvägen', Position: { lat: 59.4245940, lng: 17.9357635 }, operator: 'Recharge', street: 'Hjortvägen', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_023', name: 'Villavägen Station', Position: { lat: 59.4260085, lng: 17.9312432 }, operator: 'Recharge', street: 'Villavägen', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_024', name: 'Töjnaskolan Park', Position: { lat: 59.4249233, lng: 17.9292865 }, operator: 'Recharge', street: 'Töjnaskolan', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_025', name: 'Sveavägen Bus', Position: { lat: 59.4215182, lng: 17.9334567 }, operator: 'Recharge', street: 'Sveavägen', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_026', name: 'St1 Gas Station', Position: { lat: 59.4185613, lng: 17.9386471 }, operator: 'Recharge', street: 'St1 Station', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_027', name: 'Kanalvägen', Position: { lat: 59.4195248, lng: 17.9400039 }, operator: 'Recharge', street: 'Kanalvägen', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_028', name: 'Töjnan Running Trail', Position: { lat: 59.4297178, lng: 17.9225934 }, operator: 'Recharge', street: 'Running Trail', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_029', name: 'Polhemsvägen Slope', Position: { lat: 59.4231384, lng: 17.9427535 }, operator: 'Recharge', street: 'Polhemsvägen', city: 'Sollentuna' },
-  { id: 'SE_STOCKHOLM_030', name: 'Circle K Gas Station', Position: { lat: 59.4227041, lng: 17.9449429 }, operator: 'Recharge', street: 'Circle K', city: 'Sollentuna' },
+  // Original Töjnan area (keeping our test locations for development)
+  { csmd: { id: 22, name: 'Hjortvägen/Fjällvägen', Position: '(59.4245940,17.9357635)', Street: 'Hjortvägen', City: 'Sollentuna', Owned_by: 'Recharge' } },
+  { csmd: { id: 23, name: 'Villavägen Station', Position: '(59.4260085,17.9312432)', Street: 'Villavägen', City: 'Sollentuna', Owned_by: 'Recharge' } },
+  { csmd: { id: 24, name: 'Töjnaskolan Park', Position: '(59.4249233,17.9292865)', Street: 'Töjnaskolan', City: 'Sollentuna', Owned_by: 'Recharge' } },
+  { csmd: { id: 25, name: 'Sveavägen Bus', Position: '(59.4215182,17.9334567)', Street: 'Sveavägen', City: 'Sollentuna', Owned_by: 'Recharge' } },
+  { csmd: { id: 26, name: 'St1 Gas Station', Position: '(59.4185613,17.9386471)', Street: 'St1 Station', City: 'Sollentuna', Owned_by: 'Recharge' } },
 ];
 
 // Transform Nobil station to our ChargingStation format
-const transformNobilStation = (nobilStation: NobilStation, index: number): ChargingStation => {
-  return {
-    id: nobilStation.id,
-    latitude: nobilStation.Position.lat,
-    longitude: nobilStation.Position.lng,
-    title: nobilStation.name,
-    description: nobilStation.description || `${nobilStation.street || ''}, ${nobilStation.city || 'Stockholm'}`.trim(),
-    operator: nobilStation.operator || 'Recharge',
+const transformNobilStation = (nobilStation: NobilStation, index: number): ChargingStation | null => {
+  console.log(`🔄 Transforming station ${index}:`, nobilStation);
+  
+  if (!nobilStation || !nobilStation.csmd) {
+    console.log(`⚠️ Invalid station structure at index ${index}:`, nobilStation);
+    return null;
+  }
+  
+  if (!nobilStation.csmd.Position) {
+    console.log(`⚠️ Missing position for station at index ${index}:`, nobilStation.csmd);
+    return null;
+  }
+  
+  // Parse position string "(59.87447,10.49982)" to lat/lng
+  const positionMatch = nobilStation.csmd.Position.match(/\(([^,]+),([^)]+)\)/);
+  const latitude = positionMatch ? parseFloat(positionMatch[1]) : 0;
+  const longitude = positionMatch ? parseFloat(positionMatch[2]) : 0;
+  
+  if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
+    console.log(`⚠️ Invalid coordinates for station at index ${index}: lat=${latitude}, lng=${longitude}`);
+    return null;
+  }
+  
+  const station = {
+    id: `SE_${nobilStation.csmd.id}`, // Prefix with country code
+    latitude,
+    longitude,
+    title: nobilStation.csmd.name || `Station ${nobilStation.csmd.id}`,
+    description: nobilStation.csmd.Description_of_location || 
+                `${nobilStation.csmd.Street || ''} ${nobilStation.csmd.House_number || ''}, ${nobilStation.csmd.City || 'Stockholm'}`.trim(),
+    operator: nobilStation.csmd.Owned_by || 'Unknown',
     isDiscovered: false,
     isDiscoverable: false,
     isUnlocking: false,
     unlockProgress: 0,
   };
+  
+  console.log(`✅ Transformed station ${index}:`, station);
+  return station;
 };
 
 // Simulate network delay for realistic testing
@@ -126,6 +113,8 @@ const fetchMockStations = async (): Promise<NobilApiResponse> => {
     throw new Error('Network timeout - please check your connection');
   }
   
+  console.log('🧪 Returning mock Nobil stations:', MOCK_NOBIL_STATIONS.length);
+  
   return {
     chargerstations: MOCK_NOBIL_STATIONS,
     total: MOCK_NOBIL_STATIONS.length,
@@ -133,20 +122,26 @@ const fetchMockStations = async (): Promise<NobilApiResponse> => {
   };
 };
 
-// Real API call (ready for when we get the API key)
+// Real API call following Nobil API v3 documentation
 const fetchRealStations = async (): Promise<NobilApiResponse> => {
   if (!NOBIL_CONFIG.API_KEY) {
     throw new Error('Nobil API key not configured');
   }
 
+  // Stockholm bounding box coordinates (rectangle search as per Nobil docs)
   const params = new URLSearchParams({
-    country: NOBIL_CONFIG.COUNTRY,
-    municipality: NOBIL_CONFIG.MUNICIPALITY,
+    apiversion: '3',
+    action: 'search', 
+    type: 'rectangle',
+    northeast: '(59.4500, 18.2000)', // North-East corner of Stockholm area
+    southwest: '(59.2500, 17.8000)', // South-West corner of Stockholm area
     format: NOBIL_CONFIG.FORMAT,
     apikey: NOBIL_CONFIG.API_KEY,
+    limit: '50' // Get up to 50 stations
   });
 
   const url = `${NOBIL_CONFIG.BASE_URL}?${params.toString()}`;
+  console.log('📡 Nobil API URL:', url);
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), NOBIL_CONFIG.REQUEST_TIMEOUT);
@@ -164,10 +159,19 @@ const fetchRealStations = async (): Promise<NobilApiResponse> => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🚨 Nobil API Response Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url,
+        responseBody: errorText
+      });
       throw new Error(`Nobil API error: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log('🎯 Nobil API Success Response:', jsonResponse);
+    return jsonResponse;
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
@@ -200,37 +204,104 @@ const isCacheValid = (): boolean => {
 };
 
 // Main API service
+// Distance calculation utility
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+};
+
+// Filter and sort stations by distance from user location
+const filterAndSortByLocation = (
+  stations: ChargingStation[], 
+  userLocation?: { latitude: number; longitude: number }, 
+  limit: number = 10
+): ChargingStation[] => {
+  console.log('📍 filterAndSortByLocation called with:', { 
+    stationsCount: stations.length, 
+    userLocation, 
+    limit 
+  });
+  
+  if (!userLocation) {
+    console.log('📍 No user location provided, returning first', limit, 'stations');
+    return stations.slice(0, limit);
+  }
+
+  console.log('📍 Filtering stations by distance from user location:', userLocation);
+  
+  // Validate stations before processing
+  const validStations = stations.filter(station => 
+    station && 
+    typeof station.latitude === 'number' && 
+    typeof station.longitude === 'number' &&
+    !isNaN(station.latitude) && 
+    !isNaN(station.longitude)
+  );
+  
+  console.log('📍 Valid stations for distance calculation:', validStations.length);
+  
+  if (!validStations.length) {
+    console.log('⚠️ No valid stations found for distance calculation');
+    return [];
+  }
+  
+  // Calculate distances and sort by nearest
+  const stationsWithDistance = validStations.map(station => ({
+    ...station,
+    distance: calculateDistance(userLocation.latitude, userLocation.longitude, station.latitude, station.longitude)
+  })).sort((a, b) => a.distance - b.distance);
+
+  const nearestStations = stationsWithDistance.slice(0, limit);
+  
+  console.log(`🎯 Found ${nearestStations.length} nearest stations (${nearestStations[0]?.distance.toFixed(2)}km - ${nearestStations[nearestStations.length-1]?.distance.toFixed(2)}km)`);
+  
+  return nearestStations;
+};
+
 export const nobilApi = {
-  // Fetch all Stockholm charging stations
-  async getStockholmStations(): Promise<ChargingStation[]> {
+  // Fetch charging stations near user location
+  async getStockholmStations(userLocation?: { latitude: number; longitude: number }, limit: number = 10): Promise<ChargingStation[]> {
     console.log('🔌 Fetching Stockholm charging stations...');
     
-    // Return cached data if valid
-    if (isCacheValid()) {
+    // Return cached data if valid (but filter by location if needed)
+    if (isCacheValid() && cachedData) {
       console.log('✅ Using cached charging station data');
-      return cachedData!;
+      return filterAndSortByLocation(cachedData, userLocation, limit);
     }
 
     try {
       let apiResponse: NobilApiResponse;
       
       if (NOBIL_CONFIG.USE_MOCK_DATA) {
-        console.log('🧪 Using mock Nobil data (API key pending)');
+        console.log('🧪 USING MOCK DATA - API key pending or disabled');
         apiResponse = await fetchMockStations();
       } else {
-        console.log('🌐 Fetching live Nobil data');
+        console.log('🌐 FETCHING LIVE NOBIL DATA - API key configured');
+        console.log('🔑 API Key present:', !!NOBIL_CONFIG.API_KEY);
         apiResponse = await withRetry(() => fetchRealStations());
       }
 
-      // Transform to our format
-      const stations = apiResponse.chargerstations.map(transformNobilStation);
+      // Transform to our format and filter out any invalid stations
+      const transformedStations = apiResponse.chargerstations.map(transformNobilStation).filter((station): station is ChargingStation => station !== null);
       
-      // Cache the results
-      cachedData = stations;
+      console.log(`🔄 Transformed ${apiResponse.chargerstations.length} raw stations into ${transformedStations.length} valid stations`);
+      
+      // Cache all results
+      cachedData = transformedStations;
       cacheTimestamp = Date.now();
       
-      console.log(`✅ Successfully loaded ${stations.length} charging stations`);
-      return stations;
+      // Filter and sort by location
+      const nearestStations = filterAndSortByLocation(transformedStations, userLocation, limit);
+      
+      console.log(`✅ Successfully loaded ${transformedStations.length} stations, returning ${nearestStations.length} nearest`);
+      return nearestStations;
       
     } catch (error) {
       console.error('❌ Failed to fetch charging stations:', error);
@@ -238,7 +309,7 @@ export const nobilApi = {
       // Return cached data as fallback if available
       if (cachedData) {
         console.log('⚠️ Using cached data as fallback');
-        return cachedData;
+        return filterAndSortByLocation(cachedData, userLocation, limit);
       }
       
       throw new Error(`Failed to load charging stations: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -273,5 +344,11 @@ export const nobilApi = {
     NOBIL_CONFIG.USE_MOCK_DATA = false;
     this.clearCache(); // Force refresh with real data
     console.log('🚀 Nobil API enabled with live data');
+  },
+
+  // Force clear cache for testing
+  forceClearCache(): void {
+    this.clearCache();
+    console.log('🗑️ Cache forcefully cleared for fresh API call');
   },
 }; 

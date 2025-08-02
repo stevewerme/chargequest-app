@@ -62,6 +62,65 @@ const calculateXPReward = (stationId: string, discoveredStations: string[]): num
   return reward;
 };
 
+// Utility function to calculate map bounds from stations and user location
+const calculateMapBounds = (
+  stations: ChargingStation[], 
+  userLocation?: { latitude: number; longitude: number }
+) => {
+  console.log('🗺️ calculateMapBounds called with:', { stationsCount: stations.length, userLocation });
+  
+  if (!stations.length) {
+    console.log('⚠️ No stations provided for bounds calculation');
+    return null;
+  }
+  
+  // Filter out any invalid stations and get coordinates
+  const validStations = stations.filter(s => 
+    s && typeof s.latitude === 'number' && typeof s.longitude === 'number' && 
+    !isNaN(s.latitude) && !isNaN(s.longitude)
+  );
+  
+  console.log('🗺️ Valid stations for bounds:', validStations.length);
+  
+  if (!validStations.length) {
+    console.log('⚠️ No valid stations found for bounds calculation');
+    return null;
+  }
+  
+  // Get all coordinates (stations + user location)
+  const allCoords = [...validStations.map(s => ({ latitude: s.latitude, longitude: s.longitude }))];
+  if (userLocation && typeof userLocation.latitude === 'number' && typeof userLocation.longitude === 'number') {
+    allCoords.push(userLocation);
+  }
+  
+  // Find bounds
+  const latitudes = allCoords.map(c => c.latitude);
+  const longitudes = allCoords.map(c => c.longitude);
+  
+  const minLat = Math.min(...latitudes);
+  const maxLat = Math.max(...latitudes);
+  const minLng = Math.min(...longitudes);
+  const maxLng = Math.max(...longitudes);
+  
+  // Add padding (roughly 10% on each side)
+  const latPadding = (maxLat - minLat) * 0.1;
+  const lngPadding = (maxLng - minLng) * 0.1;
+  
+  const bounds = {
+    northeast: { 
+      latitude: maxLat + latPadding, 
+      longitude: maxLng + lngPadding 
+    },
+    southwest: { 
+      latitude: minLat - latPadding, 
+      longitude: minLng - lngPadding 
+    }
+  };
+  
+  console.log('🗺️ Calculated map bounds:', bounds);
+  return bounds;
+};
+
 // Mock charging stations focused around Töjnan area in Sollentuna
 // Using exact user-provided coordinates for accurate placement
 const MOCK_STATIONS: ChargingStation[] = [
@@ -171,6 +230,7 @@ interface GameState {
   
   // Charging Stations
   chargingStations: ChargingStation[];
+  mapBounds: { northeast: { latitude: number; longitude: number }; southwest: { latitude: number; longitude: number } } | null;
   
   // User Progress
   discoveredStations: string[];
@@ -193,6 +253,9 @@ interface GameState {
   isLoading: boolean;
   error: string | null;
   
+  // Settings
+  hapticFeedbackEnabled: boolean;
+  
   // Actions
   initializePermissions: () => Promise<void>;
   loadChargingStations: () => Promise<void>;
@@ -206,6 +269,7 @@ interface GameState {
   resetProgress: () => Promise<void>;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
+  setHapticFeedback: (enabled: boolean) => void;
   
   // Supabase Actions
   initializeSupabase: () => Promise<void>;
@@ -226,6 +290,7 @@ export const useGameStore = create<GameState>()(
       currentLocation: null,
       isLocationTracking: false,
       chargingStations: MOCK_STATIONS,
+      mapBounds: null,
       discoveredStations: [],
       totalDiscovered: 0,
       
@@ -244,6 +309,9 @@ export const useGameStore = create<GameState>()(
       
       isLoading: false,
       error: null,
+      
+      // Settings
+      hapticFeedbackEnabled: true, // Default to enabled
 
       // Actions
       initializePermissions: async () => {
@@ -279,7 +347,19 @@ export const useGameStore = create<GameState>()(
         
         try {
           console.log('🔌 Loading Stockholm charging stations...');
-          const stations = await nobilApi.getStockholmStations();
+          
+          // Pass current user location for location-based filtering
+          const { currentLocation } = get();
+          console.log('📍 Current location from store:', currentLocation);
+          
+          const userLocation = currentLocation?.coords ? {
+            latitude: currentLocation.coords.latitude,
+            longitude: currentLocation.coords.longitude
+          } : undefined;
+          
+          console.log('📍 Processed user location:', userLocation);
+          
+          const stations = await nobilApi.getStockholmStations(userLocation, 10);
           
           // Preserve discovered states from existing stations
           const { discoveredStations } = get();
@@ -292,13 +372,21 @@ export const useGameStore = create<GameState>()(
             };
           });
           
+          console.log('🗺️ About to calculate map bounds with stations:', stations.length);
+          
+          // Calculate map bounds for auto-zoom
+          const bounds = calculateMapBounds(stations, userLocation);
+          
+          console.log('🗺️ Calculated bounds result:', bounds);
+          
           set({ 
             chargingStations: updatedStations,
+            mapBounds: bounds,
             error: null 
           });
           
           const apiStatus = nobilApi.getStatus();
-          console.log(`✅ Loaded ${stations.length} stations (Mock: ${apiStatus.usingMockData})`);
+          console.log(`✅ Loaded ${stations.length} stations | Mode: ${apiStatus.usingMockData ? '🧪 MOCK DATA' : '🌐 LIVE API'} | Key: ${apiStatus.hasApiKey ? '✅' : '❌'}`);
           
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load charging stations';
@@ -394,9 +482,20 @@ export const useGameStore = create<GameState>()(
           const proximityEvent = proximityEvents.find(event => event.stationId === station.id);
           
           if (proximityEvent && !station.isDiscovered) {
+            const wasDiscoverable = station.isDiscoverable;
+            const isNowDiscoverable = proximityEvent.isInRange;
+            
+            // Trigger haptic feedback when crystal turns purple (becomes discoverable)
+            if (!wasDiscoverable && isNowDiscoverable) {
+              const { hapticFeedbackEnabled } = get();
+              if (hapticFeedbackEnabled) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }
+            
             return { 
               ...station, 
-              isDiscoverable: proximityEvent.isInRange 
+              isDiscoverable: isNowDiscoverable 
             };
           }
           
@@ -448,7 +547,10 @@ export const useGameStore = create<GameState>()(
         );
 
         // Satisfying haptic feedback for successful discovery
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const { hapticFeedbackEnabled } = get();
+        if (hapticFeedbackEnabled) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
 
         // Single atomic state update
         set({ 
@@ -808,15 +910,20 @@ export const useGameStore = create<GameState>()(
       setLoading: (loading: boolean) => {
         set({ isLoading: loading });
       },
+
+      setHapticFeedback: (enabled: boolean) => {
+        set({ hapticFeedbackEnabled: enabled });
+      },
     }),
     {
       name: 'chargequest-game-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      // Only persist user progress, not location/permission state
+      // Only persist user progress and settings, not location/permission state
       partialize: (state) => ({
         discoveredStations: state.discoveredStations,
         totalDiscovered: state.totalDiscovered,
         chargingStations: state.chargingStations,
+        hapticFeedbackEnabled: state.hapticFeedbackEnabled,
       }),
       // Ensure data integrity when rehydrating from storage
       onRehydrateStorage: () => (state) => {

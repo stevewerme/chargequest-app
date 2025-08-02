@@ -216,12 +216,13 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [x] XP progression system with 5 levels and exploration-focused unlocks (local AsyncStorage)
 - [x] Polish gameplay mechanics and UX with NES-inspired pixel art interface
 
-### Week 5: Data Integration (Ready - Awaiting API Key)
+### Week 5: Data Integration ✅
 - [x] Nobil API service implementation with comprehensive Stockholm mock data
 - [x] Replace mock data with real Stockholm charging stations (~30 stations ready)
 - [x] Integrate real data with existing local XP progression system
 - [x] Error handling and loading states with retry logic and caching
 - [x] Performance optimization for large datasets with offline fallbacks
+- [x] **API Key Integration** - Live Nobil API now active with real Stockholm charging station data
 
 ### Week 6: Backend Integration & Migration (Using Supabase MCP) ✅
 - [x] **6A: Database Setup** - Schema creation using `mcp_supabase_apply_migration`
@@ -270,11 +271,12 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [ ] App passed testing with 10+ beta users
 - [ ] Performance metrics meet acceptable thresholds
 
-## Current Status (Week 7 Complete)
+## Current Status (Week 7.5 Complete)
 - ✅ **Authentication System**: Native Apple Sign-In fully functional
 - ✅ **Core Gameplay**: Discovery, XP progression, level unlocks working
 - ✅ **Data Persistence**: Local storage with cloud sync capability
 - ✅ **Professional UX**: Polished login screen and interaction flows
+- ✅ **Real Data Integration**: Live Nobil API with Stockholm charging stations
 - ⏳ **Next Phase**: Treasure system implementation and beta testing
 
 ## 🛠️ **Manual Implementation Steps**
