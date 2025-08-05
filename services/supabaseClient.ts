@@ -28,6 +28,25 @@ export interface StationDiscovery {
   longitude: number;
 }
 
+export interface UserTreasureState {
+  id: string;
+  user_id: string;
+  total_collected: number;
+  common_collected: number;
+  rare_collected: number;
+  super_rare_collected: number;
+  epic_collected: number;
+  mythic_collected: number;
+  legendary_collected: number;
+  equipped_slot1: string | null;
+  equipped_slot2: string | null;
+  equipped_slot3: string | null;
+  current_week_id: string;
+  last_treasure_refresh: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Supabase service functions
 export const supabaseService = {
   // User progress operations
@@ -117,5 +136,113 @@ export const supabaseService = {
     }
     
     return data || [];
+  },
+
+  // Treasure system operations
+  async getUserTreasureState(userId: string): Promise<UserTreasureState | null> {
+    const { data, error } = await supabase
+      .from('user_treasure_state')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No record found - this is normal for new users
+        return null;
+      }
+      console.error('Error fetching user treasure state:', error);
+      return null;
+    }
+    
+    return data;
+  },
+
+  async createUserTreasureState(userId: string, initialData: Partial<UserTreasureState>): Promise<UserTreasureState | null> {
+    const { data, error } = await supabase
+      .from('user_treasure_state')
+      .insert({
+        user_id: userId,
+        total_collected: initialData.total_collected || 0,
+        common_collected: initialData.common_collected || 0,
+        rare_collected: initialData.rare_collected || 0,
+        super_rare_collected: initialData.super_rare_collected || 0,
+        epic_collected: initialData.epic_collected || 0,
+        mythic_collected: initialData.mythic_collected || 0,
+        legendary_collected: initialData.legendary_collected || 0,
+        equipped_slot1: initialData.equipped_slot1 || null,
+        equipped_slot2: initialData.equipped_slot2 || null,
+        equipped_slot3: initialData.equipped_slot3 || null,
+        current_week_id: initialData.current_week_id || '',
+        last_treasure_refresh: initialData.last_treasure_refresh || null,
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating user treasure state:', error);
+      return null;
+    }
+    
+    return data;
+  },
+
+  async updateUserTreasureState(userId: string, updates: Partial<UserTreasureState>): Promise<UserTreasureState | null> {
+    const { data, error } = await supabase
+      .from('user_treasure_state')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating user treasure state:', error);
+      return null;
+    }
+    
+    return data;
+  },
+
+  async syncUserTreasureState(userId: string, localState: {
+    treasureStats: any;
+    equippedTools: any;
+    currentWeekId: string;
+    lastTreasureRefresh: Date | null;
+  }): Promise<UserTreasureState | null> {
+    try {
+      // Try to get existing state
+      let treasureState = await this.getUserTreasureState(userId);
+      
+      const treasureData = {
+        total_collected: localState.treasureStats.totalCollected,
+        common_collected: localState.treasureStats.commonCollected,
+        rare_collected: localState.treasureStats.rareCollected,
+        super_rare_collected: localState.treasureStats.superRareCollected,
+        epic_collected: localState.treasureStats.epicCollected,
+        mythic_collected: localState.treasureStats.mythicCollected,
+        legendary_collected: localState.treasureStats.legendaryCollected,
+        equipped_slot1: localState.equippedTools.slot1,
+        equipped_slot2: localState.equippedTools.slot2,
+        equipped_slot3: localState.equippedTools.slot3,
+        current_week_id: localState.currentWeekId,
+        last_treasure_refresh: localState.lastTreasureRefresh?.toISOString() || null,
+      };
+      
+      if (!treasureState) {
+        // Create new treasure state
+        treasureState = await this.createUserTreasureState(userId, treasureData);
+      } else {
+        // Update existing treasure state
+        treasureState = await this.updateUserTreasureState(userId, treasureData);
+      }
+      
+      return treasureState;
+    } catch (error) {
+      console.error('Error syncing user treasure state:', error);
+      return null;
+    }
   },
 }; 

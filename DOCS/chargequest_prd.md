@@ -77,12 +77,24 @@ Prove that gamification increases charging frequency among Recharge users by 25%
 -- Core tables for user progress and discoveries
 user_progress (user_id, total_xp, current_level, discovered_stations[])
 station_discoveries (user_id, station_id, discovered_at, xp_awarded, bonus_type)
-treasures (station_id, treasure_type, value, expires_at) -- Future expansion
-user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansion
+
+-- Treasure System Implementation (Option A - Minimal Viable Schema)
+user_treasure_state (
+  user_id, 
+  total_collected, common_collected, rare_collected, super_rare_collected,
+  epic_collected, mythic_collected, legendary_collected,
+  equipped_slot1, equipped_slot2, equipped_slot3,
+  current_week_id, last_treasure_refresh,
+  created_at, updated_at
+)
+
+-- Future expansion (Option B)
+user_treasure_collections (user_id, treasure_id, rarity, collected_at, ...) -- Future analytics
 ```
 - **Row Level Security**: User data isolation with Supabase Auth integration
-- **Real-time sync**: Multi-device progress synchronization
-- **Treasure system foundation**: Database structure ready for rewards implementation
+- **Real-time sync**: Multi-device progress synchronization including treasure stats and equipped tools
+- **Treasure system**: Fully implemented with Brawl Stars rarity system and cloud sync
+- **Tool equipment**: Cross-device tool slot synchronization
 
 ### Key Dependencies
 ```json
@@ -118,11 +130,11 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - **Level 4** (1500 XP): "Power Tracker" - Unlocks Explorer's Eye
 - **Level 5** (2500 XP): "Energy Master" - Unlocks Master Tracker
 
-### Level Unlocks
-- **Energy Radar**: Distance indicator to nearest undiscovered station
-- **Treasure Preview**: See available rewards at discovered stations
-- **Explorer's Eye**: Highlight stations not visited in 7+ days
-- **Master Tracker**: Personal discovery statistics and heatmap
+### Level Unlocks (Tool System Implementation)
+- **Energy Radar** (Level 2): Distance indicator to nearest undiscovered station - Equipped via tool slot 1
+- **Treasure Preview** (Level 3): See available rewards at discovered stations - Equipped via tool slot 2  
+- **Explorer's Eye** (Level 4): Highlight stations not visited in 7+ days - Equipped via tool slot 3
+- **Master Tracker** (Level 5): Personal discovery statistics and heatmap - Advanced analytics overlay
 
 ## Migration Strategy
 
@@ -246,7 +258,42 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [x] **8D: Enhanced Error Handling** - Comprehensive validation and debugging pipeline
 - [x] **8E: Performance Optimization** - Reduced data load with intelligent caching
 
-### Week 8-9: Launch Preparation
+### Week 8.5: Claim Process Enhancement ✅
+- [x] **8.5A: Map Centering** - Station tap centers and locks map focus with smooth animation
+- [x] **8.5B: Hold-to-Claim Interaction** - Professional 1.7-second hold-to-claim with progress feedback
+- [x] **8.5C: Proximity Integration** - Distance-based claiming using existing 25m isDiscoverable logic
+- [x] **8.5D: Haptic & Visual Feedback** - Start/completion haptics and dynamic button styling
+- [x] **8.5E: State Management** - Robust interaction handling with cleanup and interruption recovery
+
+### Week 9: Popover System Mastery & UI Excellence ✅
+- [x] **9A: Three-State Popover Redesign** - Undiscovered/Claimable/Claimed states with distinct visual hierarchy
+- [x] **9B: Status Color Psychology** - Red/Purple/Green border theming with uniform white text for readability
+- [x] **9C: Integrated Progress Indicators** - Hold-to-claim progress inside button with backdrop dimming focus
+- [x] **9D: Professional Iconography** - Replaced emoji locks with Iconoir vector icons for cross-platform consistency
+- [x] **9E: Interaction Polish** - Optimized positioning, tap-to-close, and spatial relationship improvements
+
+### Week 10: Treasure System & Tool Implementation ✅
+- [x] **10A: Treasure Data Foundation** - Brawl Stars 6-tier rarity system with Swedish reward catalog
+- [x] **10B: Supabase Schema Extension** - user_treasure_state table with RLS policies and cloud sync
+- [x] **10C: Treasure Collection Mechanics** - Proximity-based collection with rarity-based haptic feedback
+- [x] **10D: Tool System Foundation** - Equipment slots with level-based unlocks and cloud synchronization
+- [x] **10E: Weekly Reset System** - Automatic treasure respawn with Sunday reset functionality
+
+### Week 10.5: Treasure UX Excellence & Visual Polish ✅
+- [x] **10.5A: Progressive Disclosure System** - Distance-based treasure information reveal (teaser vs full details)
+- [x] **10.5B: Professional Iconography** - Iconoir Lock icons replacing emojis with rarity-colored theming
+- [x] **10.5C: Pixel Art Treasure Gems** - 3D beveled gems on map markers with rarity-based coloring
+- [x] **10.5D: Toast Notification System** - Collection feedback with pixel art styling and auto-dismiss
+- [x] **10.5E: Smooth Signin Flow** - Single-stage zoom eliminating jarring bounce animation
+
+### Week 11: Tool Selection & Equipment Interface ✅
+- [x] **11A: Tool Selection Modal Foundation** - Professional modal interface with backdrop dimming and pixel art styling
+- [x] **11B: Horizontal Tool Discovery** - Scrollable tool cards with level-based unlocks and Iconoir professional icons
+- [x] **11C: Unequip-First Workflow** - Clear equipment status with prominent red UNEQUIP buttons and state management
+- [x] **11D: Equipment State Synchronization** - Fixed critical bug preventing UNEQUIP button visibility (key mismatch resolution)
+- [x] **11E: Modal Persistence & UX Polish** - Modal stays open for seamless tool switching with specific slot messaging
+
+### Week 12: Launch Preparation
 - [ ] Push notification system
 - [ ] Beta testing with real users
 - [ ] Performance monitoring and optimization
@@ -275,19 +322,34 @@ user_treasures (user_id, treasure_id, claimed_at, redeemed_at) -- Future expansi
 - [x] Core gameplay loop is fully functional
 - [x] User can discover minimum 5 stations in Stockholm
 - [x] Authentication and data persistence work reliably
-- [ ] Basic treasure system generates and awards vouchers
+- [x] Basic treasure system generates and awards vouchers
+- [x] Tool system with level-based unlocks implemented
+- [x] Multi-device cloud synchronization for all user data
+- [x] UI integration for treasure collection (progressive disclosure, toast notifications, pixel art gems)
+- [x] UI integration for tool selection modal and equipment interface
 - [ ] App passed testing with 10+ beta users
 - [ ] Performance metrics meet acceptable thresholds
 
-## Current Status (Week 8.0 Complete)
+## Current Status (Week 11.0 Complete)
 - ✅ **Authentication System**: Native Apple Sign-In fully functional
 - ✅ **Core Gameplay**: Discovery, XP progression, level unlocks working
-- ✅ **Data Persistence**: Local storage with cloud sync capability
+- ✅ **Data Persistence**: Local storage with comprehensive cloud sync capability
 - ✅ **Professional UX**: Polished login screen and interaction flows
 - ✅ **Live Data Integration**: Nobil API v3 with Stockholm charging stations
 - ✅ **Location Intelligence**: User-centered discovery with nearest 10 stations
 - ✅ **Smart Map Features**: Auto-zoom and optimal bounds calculation
-- ⏳ **Next Phase**: Treasure system implementation and beta testing
+- ✅ **Claim Process**: Hold-to-claim mechanics with map centering and haptic feedback
+- ✅ **Popover System Excellence**: Three-state status hierarchy with professional UI polish
+- ✅ **Visual Identity**: Status-based color psychology and consistent iconography
+- ✅ **Interaction Design**: Backdrop dimming, integrated progress indicators, optimized positioning
+- ✅ **Treasure System Foundation**: Brawl Stars 6-tier rarity system with Swedish rewards and cloud sync
+- ✅ **Tool System Architecture**: Level-based unlocks with equipment slots and multi-device synchronization
+- ✅ **Weekly Reset System**: Automatic treasure respawn with Sunday reset functionality
+- ✅ **Treasure UX Excellence**: Progressive disclosure system with professional icons and pixel art gems
+- ✅ **Collection Experience**: Toast notifications, 3D treasure gems, smooth signin flow
+- ✅ **Tool Selection Interface**: Professional equipment modal with horizontal scrolling and persistent state
+- ✅ **Equipment Management**: Unequip-first workflow with visual feedback and state synchronization
+- ⏳ **Next Phase**: Beta testing preparation and launch optimization
 
 ## 🛠️ **Manual Implementation Steps**
 

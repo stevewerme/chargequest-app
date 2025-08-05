@@ -93,6 +93,10 @@ const transformNobilStation = (nobilStation: NobilStation, index: number): Charg
     isDiscoverable: false,
     isUnlocking: false,
     unlockProgress: 0,
+    // Real Nobil API status data
+    stationStatus: nobilStation.csmd.Station_status,
+    totalChargingPoints: nobilStation.csmd.Number_charging_points,
+    availableChargingPoints: nobilStation.csmd.Available_charging_points,
   };
   
   console.log(`✅ Transformed station ${index}:`, station);
@@ -122,26 +126,69 @@ const fetchMockStations = async (): Promise<NobilApiResponse> => {
   };
 };
 
-// Real API call following Nobil API v3 documentation
-const fetchRealStations = async (): Promise<NobilApiResponse> => {
+// Real API call with pagination support
+const fetchRealStations = async (
+  userLocation?: { latitude: number; longitude: number },
+  offset: number = 0,
+  limit: number = 500
+): Promise<NobilApiResponse> => {
   if (!NOBIL_CONFIG.API_KEY) {
     throw new Error('Nobil API key not configured');
   }
 
-  // Stockholm bounding box coordinates (rectangle search as per Nobil docs)
+  // Create bounding box based on user location if available, otherwise use Stockholm default
+  let northeast: string;
+  let southwest: string;
+  
+  if (userLocation) {
+    // Create ~50km radius around user location for COMPREHENSIVE coverage
+    const radius = 0.45; // ~45-50km in degrees (much larger for multi-center approach)
+    const lat = userLocation.latitude;
+    const lng = userLocation.longitude;
+    
+    northeast = `(${(lat + radius).toFixed(6)}, ${(lng + radius).toFixed(6)})`;
+    southwest = `(${(lat - radius).toFixed(6)}, ${(lng - radius).toFixed(6)})`;
+    
+    console.log(`📍 Using LARGE dynamic bounding box around location:`, {
+      userLat: lat,
+      userLng: lng,
+      northeast,
+      southwest,
+      radiusKm: '~50km (EXPANDED for better coverage)'
+    });
+  } else {
+    // Fallback to Stockholm area  
+    northeast = '(59.5500, 18.3000)'; // Expanded Stockholm area
+    southwest = '(59.2000, 17.7000)'; // Expanded Stockholm area
+    console.log('📍 Using expanded Stockholm fallback bounding box');
+  }
+
   const params = new URLSearchParams({
     apiversion: '3',
     action: 'search', 
     type: 'rectangle',
-    northeast: '(59.4500, 18.2000)', // North-East corner of Stockholm area
-    southwest: '(59.2500, 17.8000)', // South-West corner of Stockholm area
+    northeast,
+    southwest,
     format: NOBIL_CONFIG.FORMAT,
     apikey: NOBIL_CONFIG.API_KEY,
-    limit: '50' // Get up to 50 stations
+    limit: limit.toString(),
+    offset: offset.toString() // Add pagination support
   });
 
+  console.log(`📡 Nobil API request: offset=${offset}, limit=${limit}`);
+  console.log(`📦 Bounding box being used: NE=${northeast}, SW=${southwest}`);
+
   const url = `${NOBIL_CONFIG.BASE_URL}?${params.toString()}`;
-  console.log('📡 Nobil API URL:', url);
+  console.log('📡 FULL Nobil API URL:', url);
+  
+  // Extract just the key parts for easier reading
+  console.log('📍 API LOCATION PARAMS:', {
+    northeast,
+    southwest,
+    limit,
+    offset,
+    userLocation: userLocation ? `${userLocation.latitude}, ${userLocation.longitude}` : 'none'
+  });
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), NOBIL_CONFIG.REQUEST_TIMEOUT);
@@ -171,6 +218,39 @@ const fetchRealStations = async (): Promise<NobilApiResponse> => {
 
     const jsonResponse = await response.json();
     console.log('🎯 Nobil API Success Response:', jsonResponse);
+    
+    // DEBUG: Detailed API response analysis
+    console.log(`📊 DETAILED API RESPONSE:`, {
+      totalStations: jsonResponse.chargerstations?.length || 0,
+      hasChargerstations: !!jsonResponse.chargerstations,
+      responseKeys: Object.keys(jsonResponse),
+      requestedLocation: userLocation ? `${userLocation.latitude}, ${userLocation.longitude}` : 'none'
+    });
+    
+    // DEBUG: Show station distribution by ID ranges to detect if we're getting same data
+    if (jsonResponse.chargerstations && jsonResponse.chargerstations.length > 0) {
+      const stationIds = jsonResponse.chargerstations.map((station: any) => parseInt(station.csmd?.id)).filter((id: number) => !isNaN(id));
+      const minId = Math.min(...stationIds);
+      const maxId = Math.max(...stationIds);
+      
+      console.log(`📈 Station ID range: ${minId} to ${maxId} (${stationIds.length} stations)`);
+      
+      // Show first and last few for fingerprinting this response
+      const firstFew = jsonResponse.chargerstations.slice(0, 3).map((station: any) => ({
+        id: station.csmd?.id,
+        name: station.csmd?.name?.substring(0, 20) + '...',
+        pos: station.csmd?.Position?.substring(0, 20) + '...'
+      }));
+      console.log(`📋 First 3 stations:`, firstFew);
+      
+      const lastFew = jsonResponse.chargerstations.slice(-3).map((station: any) => ({
+        id: station.csmd?.id,
+        name: station.csmd?.name?.substring(0, 20) + '...',
+        pos: station.csmd?.Position?.substring(0, 20) + '...'
+      }));
+      console.log(`📋 Last 3 stations:`, lastFew);
+    }
+    
     return jsonResponse;
   } catch (error) {
     clearTimeout(timeoutId);
@@ -219,15 +299,23 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // Filter and sort stations by distance from user location
 const filterAndSortByLocation = (
-  stations: ChargingStation[], 
-  userLocation?: { latitude: number; longitude: number }, 
-  limit: number = 10
+  stations: ChargingStation[],
+  userLocation?: { latitude: number; longitude: number },
+  limit: number = 10,
+  includeOperators?: string[]
 ): ChargingStation[] => {
   console.log('📍 filterAndSortByLocation called with:', { 
     stationsCount: stations.length, 
     userLocation, 
     limit 
   });
+  
+  console.log('📍 Sample stations for debugging:', stations.slice(0, 2).map(s => ({
+    id: s.id, 
+    title: s.title, 
+    lat: s.latitude, 
+    lng: s.longitude
+  })));
   
   if (!userLocation) {
     console.log('📍 No user location provided, returning first', limit, 'stations');
@@ -237,13 +325,25 @@ const filterAndSortByLocation = (
   console.log('📍 Filtering stations by distance from user location:', userLocation);
   
   // Validate stations before processing
-  const validStations = stations.filter(station => 
+  let validStations = stations.filter(station => 
     station && 
     typeof station.latitude === 'number' && 
     typeof station.longitude === 'number' &&
     !isNaN(station.latitude) && 
     !isNaN(station.longitude)
   );
+  
+  // Filter to only include specific operators if specified
+  if (includeOperators && includeOperators.length > 0) {
+    const beforeCount = validStations.length;
+    validStations = validStations.filter(station => 
+      includeOperators.some(includedOp => 
+        station.operator.toLowerCase().includes(includedOp.toLowerCase())
+      )
+    );
+    console.log(`✅ Filtered to show only ${validStations.length} stations from operators:`, includeOperators);
+    console.log(`📊 Excluded ${beforeCount - validStations.length} stations from other operators`);
+  }
   
   console.log('📍 Valid stations for distance calculation:', validStations.length);
   
@@ -262,18 +362,172 @@ const filterAndSortByLocation = (
   
   console.log(`🎯 Found ${nearestStations.length} nearest stations (${nearestStations[0]?.distance.toFixed(2)}km - ${nearestStations[nearestStations.length-1]?.distance.toFixed(2)}km)`);
   
+  // Debug: Show which stations were selected
+  console.log('🎯 Selected nearest stations:', nearestStations.map(s => ({
+    id: s.id,
+    title: s.title,
+    distance: s.distance?.toFixed(2) + 'km'
+  })));
+  
   return nearestStations;
+};
+
+// Fetch ALL stations using pagination - with infinite loop protection
+const fetchAllStationsWithPagination = async (
+  userLocation?: { latitude: number; longitude: number }
+): Promise<NobilApiResponse> => {
+  console.log('🔄 Starting paginated fetch to get ALL stations...');
+  
+  const allStations: any[] = [];
+  const seenStationIds = new Set<string>(); // Track duplicate stations to detect API issues
+  let offset = 0;
+  const limit = 500; // Max per request
+  let hasMorePages = true;
+  let pageCount = 0;
+  let consecutiveEmptyPages = 0;
+  
+  // SAFETY: Much lower limit for initial testing
+  const maxPages = 5; // Reduced from 20 to prevent infinite loops during testing
+  
+  while (hasMorePages && pageCount < maxPages) {
+    pageCount++;
+    console.log(`📖 Fetching page ${pageCount}/${maxPages} (offset: ${offset}, limit: ${limit})`);
+    
+    try {
+      const response = await withRetry(() => fetchRealStations(userLocation, offset, limit));
+      
+      if (!response.chargerstations || response.chargerstations.length === 0) {
+        consecutiveEmptyPages++;
+        console.log(`📄 Page ${pageCount}: No stations found (empty page ${consecutiveEmptyPages})`);
+        
+        if (consecutiveEmptyPages >= 2) {
+          console.log(`📄 Multiple empty pages detected, ending pagination`);
+          hasMorePages = false;
+          break;
+        }
+        offset += limit; // Still increment offset in case API has gaps
+        continue;
+      }
+      
+      consecutiveEmptyPages = 0; // Reset empty page counter
+      console.log(`📄 Page ${pageCount}: Found ${response.chargerstations.length} stations`);
+      
+      // LOOP DETECTION: Check for duplicate stations (indicates API not paginating properly)
+      let newStationsCount = 0;
+      let duplicateStationsCount = 0;
+      
+      for (const station of response.chargerstations) {
+        const stationId = station.csmd?.id?.toString();
+        if (stationId) {
+          if (seenStationIds.has(stationId)) {
+            duplicateStationsCount++;
+          } else {
+            seenStationIds.add(stationId);
+            newStationsCount++;
+          }
+        }
+      }
+      
+      console.log(`📊 Page ${pageCount}: ${newStationsCount} new stations, ${duplicateStationsCount} duplicates`);
+      
+      // INFINITE LOOP PROTECTION: If we're getting mostly duplicates, API isn't paginating properly
+      if (duplicateStationsCount > response.chargerstations.length * 0.8) {
+        console.log(`🛑 STOPPING: Page ${pageCount} has ${duplicateStationsCount}/${response.chargerstations.length} duplicates - API likely not supporting pagination properly`);
+        hasMorePages = false;
+        break;
+      }
+      
+      // Check for Häggvik on this page
+      const pageHaggvik = response.chargerstations.filter((station: any) => 
+        station.csmd?.name?.toLowerCase().includes('häggvik') || 
+        station.csmd?.name?.toLowerCase().includes('haggvik')
+      );
+      
+      if (pageHaggvik.length > 0) {
+        console.log(`🎯 FOUND HÄGGVIK on page ${pageCount}:`, pageHaggvik.map((s: any) => ({
+          id: s.csmd?.id,
+          name: s.csmd?.name,
+          operator: s.csmd?.Owned_by
+        })));
+      }
+      
+      // Add only NEW stations to our collection
+      const newStations = response.chargerstations.filter((station: any) => {
+        const stationId = station.csmd?.id?.toString();
+        return stationId && !allStations.some(existing => existing.csmd?.id?.toString() === stationId);
+      });
+      
+      allStations.push(...newStations);
+      console.log(`📊 Total unique stations so far: ${allStations.length}`);
+      
+      // Check if we should continue
+      if (response.chargerstations.length < limit) {
+        console.log(`📄 Page ${pageCount}: Received ${response.chargerstations.length} < ${limit}, this was the last page`);
+        hasMorePages = false;
+      } else if (newStationsCount === 0) {
+        console.log(`📄 Page ${pageCount}: No new stations found, likely reached end or API issue`);
+        hasMorePages = false;
+      } else {
+        offset += limit;
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error fetching page ${pageCount}:`, error);
+      hasMorePages = false;
+    }
+  }
+  
+  if (pageCount >= maxPages) {
+    console.log(`🛑 Reached maximum page limit (${maxPages}) to prevent infinite loops`);
+  }
+  
+  console.log(`✅ Pagination complete: ${pageCount} pages, ${allStations.length} total stations`);
+  
+  // Final Häggvik check across all pages
+  const allHaggvik = allStations.filter((station: any) => 
+    station.csmd?.name?.toLowerCase().includes('häggvik') || 
+    station.csmd?.name?.toLowerCase().includes('haggvik')
+  );
+  
+  if (allHaggvik.length > 0) {
+    console.log(`🎉 FINAL HÄGGVIK RESULT: Found ${allHaggvik.length} Häggvik stations across all pages!`, 
+      allHaggvik.map((s: any) => ({
+        page: 'combined',
+        id: s.csmd?.id,
+        name: s.csmd?.name,
+        operator: s.csmd?.Owned_by,
+        position: s.csmd?.Position
+      }))
+    );
+  } else {
+    console.log('❌ FINAL HÄGGVIK RESULT: No Häggvik stations found across all pages');
+  }
+  
+  return {
+    chargerstations: allStations,
+    total: allStations.length,
+    status: 'success'
+  };
 };
 
 export const nobilApi = {
   // Fetch charging stations near user location
-  async getStockholmStations(userLocation?: { latitude: number; longitude: number }, limit: number = 10): Promise<ChargingStation[]> {
+  async getStockholmStations(
+    userLocation?: { latitude: number; longitude: number }, 
+    limit: number = 10,
+    includeOperators?: string[]
+  ): Promise<ChargingStation[]> {
     console.log('🔌 Fetching Stockholm charging stations...');
     
-    // Return cached data if valid (but filter by location if needed)
-    if (isCacheValid() && cachedData) {
+    // If we have user location, always fetch fresh data to get area-specific results
+    // Otherwise, use cached data if valid
+    if (!userLocation && isCacheValid() && cachedData) {
       console.log('✅ Using cached charging station data');
-      return filterAndSortByLocation(cachedData, userLocation, limit);
+      return filterAndSortByLocation(cachedData, userLocation, limit, includeOperators);
+    }
+    
+    if (userLocation) {
+      console.log('📍 User location provided - fetching fresh data for location-based search');
     }
 
     try {
@@ -285,7 +539,12 @@ export const nobilApi = {
       } else {
         console.log('🌐 FETCHING LIVE NOBIL DATA - API key configured');
         console.log('🔑 API Key present:', !!NOBIL_CONFIG.API_KEY);
-        apiResponse = await withRetry(() => fetchRealStations());
+        // TEMPORARY: Disable pagination to prevent infinite loops during testing
+        console.log('🛡️ SAFETY MODE: Using single API call instead of pagination to prevent infinite loops');
+        apiResponse = await withRetry(() => fetchRealStations(userLocation, 0, 500));
+        
+        // TODO: Re-enable pagination once we confirm API supports offset parameter
+        // apiResponse = await fetchAllStationsWithPagination(userLocation);
       }
 
       // Transform to our format and filter out any invalid stations
@@ -298,7 +557,7 @@ export const nobilApi = {
       cacheTimestamp = Date.now();
       
       // Filter and sort by location
-      const nearestStations = filterAndSortByLocation(transformedStations, userLocation, limit);
+      const nearestStations = filterAndSortByLocation(transformedStations, userLocation, limit, includeOperators);
       
       console.log(`✅ Successfully loaded ${transformedStations.length} stations, returning ${nearestStations.length} nearest`);
       return nearestStations;
@@ -309,7 +568,7 @@ export const nobilApi = {
       // Return cached data as fallback if available
       if (cachedData) {
         console.log('⚠️ Using cached data as fallback');
-        return filterAndSortByLocation(cachedData, userLocation, limit);
+        return filterAndSortByLocation(cachedData, userLocation, limit, includeOperators);
       }
       
       throw new Error(`Failed to load charging stations: ${error instanceof Error ? error.message : 'Unknown error'}`);

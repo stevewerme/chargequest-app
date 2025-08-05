@@ -10,6 +10,10 @@ export interface ChargingStation {
   isDiscoverable: boolean; // Within range, can be unlocked
   isUnlocking: boolean; // Currently unlocking
   unlockProgress: number; // 0-100 unlock progress
+  // Real Nobil API status data
+  stationStatus?: number; // Station_status from Nobil API
+  totalChargingPoints?: number; // Number_charging_points from Nobil API
+  availableChargingPoints?: number; // Available_charging_points from Nobil API
 }
 
 export interface UserLocation {
