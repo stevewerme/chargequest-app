@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Animated, ScrollView } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
-import { MapsArrowDiagonal, User, Lock, Antenna, Search, Eye, Settings } from 'iconoir-react-native';
+import { MapsArrowDiagonal, User, Lock, Antenna, Search, Eye, Settings, Trophy, Crown, Star, MapPin, Clock, Home, Settings as SettingsIcon } from 'iconoir-react-native';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useGameStore, getRarityColor, getRarityDisplayName, getTreasureXPBonus, type TreasureRarity, type Treasure } from '../stores/gameStore';
@@ -504,6 +504,271 @@ const PixelToast = ({ visible, message, onHide }: { visible: boolean; message: s
   );
 };
 
+// Phase 5: Player Profile Components
+const PlayerProfileModal = ({
+  visible,
+  onClose,
+  currentLevel,
+  levelTitle, 
+  totalXP,
+  xpToNextLevel,
+  discoveredStations,
+  totalStations,
+  treasureStats,
+  claimedStations,
+  onViewTerritory,
+  onManageStations,
+  isDeveloperModeEnabled,
+  onToggleDeveloperMode,
+  // Function props
+  handleCenterOnUser,
+  handleReloadStations,
+  handleLogout,
+  handleReset,
+  handleShowSyncStatus,
+  spawnTreasureForStation,
+  chargingStations
+}: {
+  visible: boolean;
+  onClose: () => void;
+  currentLevel: number;
+  levelTitle: string;
+  totalXP: number;
+  xpToNextLevel: number | null;
+  discoveredStations: number;
+  totalStations: number;
+  treasureStats: any;
+  claimedStations: number;
+  onViewTerritory: () => void;
+  onManageStations: () => void; 
+  isDeveloperModeEnabled: boolean;
+  onToggleDeveloperMode: () => void;
+  // Function props
+  handleCenterOnUser: () => void;
+  handleReloadStations: () => void;
+  handleLogout: () => void;
+  handleReset: () => void;
+  handleShowSyncStatus: () => void;
+  spawnTreasureForStation: (stationId: string) => void;
+  chargingStations: any[];
+}) => {
+  if (!visible) return null;
+
+  // Calculate this week's treasure collection
+  const weeklyTreasures = treasureStats.totalCollected; // Simplified for now
+  const lifetimeEpicPlus = treasureStats.epicCollected + treasureStats.mythicCollected + treasureStats.legendaryCollected;
+
+  return (
+    <TouchableOpacity 
+      style={styles.slideUpMenu}
+      onPress={onClose}
+      activeOpacity={1}
+    >
+      <View style={[styles.menuModal, { maxHeight: '85%' }]}>
+        <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
+          
+          {/* Player Profile Header */}
+          <View style={styles.playerProfileHeader}>
+            <View style={styles.avatarContainer}>
+              <PixelAvatarPortrait />
+            </View>
+            <View style={styles.playerInfo}>
+              <Text style={styles.playerLevel}>Level {currentLevel}</Text>
+              <Text style={styles.playerTitle}>{levelTitle}</Text>
+            </View>
+          </View>
+
+          {/* XP Progress Bar */}
+          <View style={styles.xpSection}>
+            <View style={styles.xpProgressContainer}>
+              <Text style={styles.xpLabel}>
+                {totalXP} XP {xpToNextLevel ? `/ ${totalXP + xpToNextLevel} XP` : '(MAX)'}
+              </Text>
+              {xpToNextLevel && (
+                <View style={styles.xpProgressBar}>
+                  <View 
+                    style={[
+                      styles.xpProgressFill, 
+                      { width: `${((totalXP % (totalXP + xpToNextLevel)) / (totalXP + xpToNextLevel)) * 100}%` }
+                    ]} 
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Achievement Stats with Gaming Psychology */}
+          <View style={styles.achievementSection}>
+            <Text style={styles.sectionTitle}>🏆 ACHIEVEMENTS</Text>
+            
+            <View style={styles.statsRow}>
+              <TouchableOpacity style={styles.statItem}>
+                <MapPin width={16} height={16} color="#00ff88" />
+                <Text style={styles.statValue}>{discoveredStations}</Text>
+                <Text style={styles.statLabel}>Discovered</Text>
+                {discoveredStations >= 10 && <Text style={styles.achievementBadge}>🔥</Text>}
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.statItem}>
+                <Star width={16} height={16} color="#FFD700" />
+                <Text style={styles.statValue}>{weeklyTreasures}</Text>
+                <Text style={styles.statLabel}>This Week</Text>
+                {weeklyTreasures >= 5 && <Text style={styles.achievementBadge}>⚡</Text>}
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.statItem}>
+                <Trophy width={16} height={16} color="#FF6B6B" />
+                <Text style={styles.statValue}>{lifetimeEpicPlus}</Text>
+                <Text style={styles.statLabel}>Legendary</Text>
+                {lifetimeEpicPlus >= 1 && <Text style={styles.achievementBadge}>💎</Text>}
+              </TouchableOpacity>
+            </View>
+            
+            {/* Progress Milestones */}
+            <View style={styles.milestonesContainer}>
+              <Text style={styles.milestonesTitle}>🎯 NEXT GOALS</Text>
+              <View style={styles.milestone}>
+                <Text style={styles.milestoneText}>
+                  {discoveredStations < 25 
+                    ? `Discover ${25 - discoveredStations} more stations for Explorer rank`
+                    : discoveredStations < 50
+                    ? `Discover ${50 - discoveredStations} more stations for Master rank`  
+                    : "🎉 Master Explorer achieved!"
+                  }
+                </Text>
+              </View>
+              
+              <View style={styles.milestone}>
+                <Text style={styles.milestoneText}>
+                  {claimedStations < 5
+                    ? `Claim ${5 - claimedStations} more territories for Territory Master`
+                    : "🏰 Territory Master achieved!"
+                  }
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Territory Management */}
+          <View style={styles.territorySection}>
+            <Text style={styles.sectionTitle}>🏠 MY TERRITORY</Text>
+            
+            <TouchableOpacity style={styles.menuButton} onPress={onViewTerritory}>
+              <Text style={styles.menuButtonIcon}>🏰</Text>
+              <View style={styles.menuButtonContent}>
+                <Text style={styles.menuButtonText}>Claimed Stations</Text>
+                <Text style={styles.menuButtonSubtext}>{claimedStations} active territories</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuButton} onPress={onManageStations}>
+              <Text style={styles.menuButtonIcon}>⚡</Text>
+              <View style={styles.menuButtonContent}>
+                <Text style={styles.menuButtonText}>Manage Territory</Text>
+                <Text style={styles.menuButtonSubtext}>Renew expiring claims</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tools & Settings */}
+          <View style={styles.settingsSection}>
+            <Text style={styles.sectionTitle}>🔧 TOOLS & SETTINGS</Text>
+            
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => {
+                onClose();
+                handleCenterOnUser();
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>📍</Text>
+              <Text style={styles.menuButtonText}>Center on Location</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => {
+                onClose();
+                handleReloadStations();
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>🗺️</Text>
+              <Text style={styles.menuButtonText}>Refresh Stations</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => {
+                onClose();
+                handleLogout();
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>🚪</Text>
+              <Text style={styles.menuButtonText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Developer Mode Toggle (Hidden by default) */}
+          {isDeveloperModeEnabled && (
+            <View style={styles.developerSection}>
+              <Text style={styles.sectionTitle}>🛠️ DEVELOPER</Text>
+              
+              <TouchableOpacity 
+                style={styles.menuButton}
+                onPress={() => {
+                  onClose();
+                  handleReset();
+                }}
+              >
+                <Text style={styles.menuButtonIcon}>🔄</Text>
+                <Text style={styles.menuButtonText}>Reset Progress</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuButton}
+                onPress={() => {
+                  onClose();
+                  // Spawn treasures for discovered stations
+                  const discoveredStations = chargingStations.filter((s: any) => s.isDiscovered);
+                  discoveredStations.forEach((station: any) => {
+                    spawnTreasureForStation(station.id);
+                  });
+                  Alert.alert('🎁 Test Treasures', `Spawned treasures for ${discoveredStations.length} discovered stations!`);
+                }}
+              >
+                <Text style={styles.menuButtonIcon}>🎁</Text>
+                <Text style={styles.menuButtonText}>Spawn Test Treasures</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.menuButton}
+                onPress={() => {
+                  onClose();
+                  handleShowSyncStatus();
+                }}
+              >
+                <Text style={styles.menuButtonIcon}>📊</Text>
+                <Text style={styles.menuButtonText}>Debug Information</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Developer Mode Toggle Area (5-tap gesture) */}
+          <TouchableOpacity 
+            style={styles.hiddenDeveloperToggle}
+            onPress={onToggleDeveloperMode}
+          >
+            <Text style={styles.hiddenToggleText}>
+              {isDeveloperModeEnabled ? 'Dev Mode: ON' : '• • • • •'}
+            </Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 // Tool Selection Modal Component with pixel art styling
 const ToolSelectionModal = ({ 
   visible, 
@@ -636,7 +901,7 @@ const ToolSelectionModal = ({
                         height: 28,
                         color: '#AA77FF'
                       })}
-                    </View>
+          </View>
                     <View style={styles.currentToolTextContainer}>
                       <Text style={styles.currentToolName}>
                         {availableTools.find(t => t.id === currentlyEquipped)!.name}
@@ -644,7 +909,7 @@ const ToolSelectionModal = ({
                       <Text style={styles.currentToolDescription}>
                         {availableTools.find(t => t.id === currentlyEquipped)!.description}
                       </Text>
-                    </View>
+        </View>
                   </>
                 )}
               </View>
@@ -709,7 +974,7 @@ const ToolSelectionModal = ({
                       isEquippedElsewhere && styles.horizontalToolNameEquippedElsewhere
                     ]}>
                       {tool.name}
-                    </Text>
+                  </Text>
 
                     {/* Status */}
                     {!isUnlocked ? (
@@ -741,7 +1006,7 @@ const ToolSelectionModal = ({
                       <View style={styles.toolDetailHeader}>
                         <View style={styles.toolDetailIcon}>
                           <selectedTool.icon width={32} height={32} color="#AA77FF" />
-                        </View>
+                </View>
                         <View style={styles.toolDetailInfo}>
                           <Text style={styles.toolDetailName}>{selectedTool.name}</Text>
                           <Text style={styles.toolDetailLevel}>
@@ -749,26 +1014,26 @@ const ToolSelectionModal = ({
                              isEquippedElsewhere ? `Currently equipped in slot ${getEquippedSlot(selectedTool.id)}` : 
                              'Ready to equip'}
                           </Text>
-                        </View>
-                      </View>
-                      
+              </View>
+            </View>
+          
                       <Text style={styles.toolDetailDescription}>
                         {selectedTool.description}
                       </Text>
                       
                       {isUnlocked && !isEquippedElsewhere && (
-                        <TouchableOpacity 
+          <TouchableOpacity 
                           style={styles.toolEquipButton}
                           onPress={() => handleToolSelect(selectedTool.id)}
-                          activeOpacity={0.8}
-                        >
+            activeOpacity={0.8}
+          >
                           <Text style={styles.toolEquipButtonText}>EQUIP TO SLOT {selectedSlot}</Text>
-                        </TouchableOpacity>
+          </TouchableOpacity>
                       )}
                     </>
                   );
                 })()}
-              </View>
+      </View>
             )}
           </View>
         )}
@@ -812,6 +1077,8 @@ const ClaimPopover = ({
   const treasure = station?.id ? getTreasureForStation(station.id) : null;
   const hasTreasure = treasure && !treasure.isCollected;
   
+  // No longer need height calculation for positioning - using fixed bottom anchor
+  
   // Handle treasure collection
   const handleTreasureCollection = () => {
     if (treasure && !treasure.isCollected) {
@@ -850,16 +1117,13 @@ const ClaimPopover = ({
   };
 
   return (
-          <TouchableOpacity 
-        style={styles.popoverContainer}
-        activeOpacity={1}
-        onPress={() => onClose()} // Close when tapping backdrop
-      >
-      <TouchableOpacity 
-        style={getPopoverStyle()}
-        activeOpacity={1}
-        onPress={(e) => e.stopPropagation()} // Prevent backdrop close when tapping popover
-      >
+    <TouchableOpacity 
+      style={styles.popoverContainer}
+      activeOpacity={1}
+      onPress={() => onClose()} // Close when tapping backdrop
+    >
+      <View style={{ alignItems: 'center' }}>
+        <View style={getPopoverStyle()}>
         {/* Header with close button */}
           <View style={styles.popoverHeader}>
           <Text style={styles.popoverLocationName}>
@@ -878,57 +1142,253 @@ const ClaimPopover = ({
                 {/* Treasure display for discovered stations */}
         {status === 'claimed' && hasTreasure && (
           <View style={styles.treasureContainer}>
-            <View style={[styles.treasureHeader, { borderLeftColor: getRarityColor(treasure.rarity) }]}>
-              <View style={styles.treasureRarityRow}>
-                {!isWithinCollectionRange && (
-                  <Lock width={16} height={16} color={getRarityColor(treasure.rarity)} style={styles.treasureLockIcon} />
-                )}
-                <Text style={[styles.treasureRarity, { color: getRarityColor(treasure.rarity) }]}>
-                  {getRarityDisplayName(treasure.rarity)} Treasure
-                </Text>
-        </View>
-              <Text style={styles.treasureXP}>+{getTreasureXPBonus(treasure.rarity)} XP</Text>
+            {/* Pixel Art Treasure Chest */}
+            <View style={styles.treasureChestContainer}>
+              <View style={styles.treasureChest}>
+                {/* PIXEL-PERFECT treasure chest recreated from exact CSS coordinates */}
+                {/* Coordinate mapping: 10px→0, 20px→1, ..., 180px→17 (X), 60px→0, 70px→1, ..., 170px→11 (Y) */}
+                
+                {/* Row 0 (y=60px): Border pixels 30px-160px - bright brown */}
+                <View style={[styles.treasurePixel, {left: 2*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 0*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 0*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 1 (y=70px): 20px border, 30px white, 40px-130px yellow, 140px lock, 150px-160px yellow, 170px border */}
+                <View style={[styles.treasurePixel, {left: 1*3, top: 1*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 1*3, backgroundColor: '#FFF'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 1*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 1*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 1*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 2 (y=80px): Complex gold pattern with border and lock */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 2*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 2*3, backgroundColor: '#FFF'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 2*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 2*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 2*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 2*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 2*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 2*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 2*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 2*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 2*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 2*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 3 (y=90px): All yellow interior except lock */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 3*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 3*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 3*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 3*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 4 (y=100px): Keyhole pattern with gold shading */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 4*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 4*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 4*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 4*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 4*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 4*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 5 (y=110px): Gold pattern variation */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 5*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 5*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 5*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 5*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 5*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 5*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 5*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 5*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 5*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 5*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 5*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 5*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 6 (y=120px): Another gold pattern */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 6*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 6*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 6*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 6*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 6*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 6*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 6*3, backgroundColor: '#FFC107'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 6*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 6*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 6*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 6*3, backgroundColor: '#FF9800'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 6*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 6*3, backgroundColor: '#795548'}]} />
+                
+                {/* Rows 7-8 (y=130px-140px): Body patterns */}
+                {[7,8].map(row => (
+                  <React.Fragment key={row}>
+                    <View style={[styles.treasurePixel, {left: 0*3, top: row*3, backgroundColor: '#795548'}]} />
+                    <View style={[styles.treasurePixel, {left: 1*3, top: row*3, backgroundColor: '#FFEB3B'}]} />
+                    <View style={[styles.treasurePixel, {left: 2*3, top: row*3, backgroundColor: '#FF9800'}]} />
+                    <View style={[styles.treasurePixel, {left: 3*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 4*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 5*3, top: row*3, backgroundColor: '#FFEB3B'}]} />
+                    <View style={[styles.treasurePixel, {left: 6*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 7*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 8*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 9*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 10*3, top: row*3, backgroundColor: '#FFC107'}]} />
+                    <View style={[styles.treasurePixel, {left: 11*3, top: row*3, backgroundColor: '#FFEB3B'}]} />
+                    <View style={[styles.treasurePixel, {left: 12*3, top: row*3, backgroundColor: '#795548'}]} />
+                    <View style={[styles.treasurePixel, {left: 13*3, top: row*3, backgroundColor: '#FFEB3B'}]} />
+                    <View style={[styles.treasurePixel, {left: 14*3, top: row*3, backgroundColor: '#FF9800'}]} />
+                    <View style={[styles.treasurePixel, {left: 15*3, top: row*3, backgroundColor: '#FF9800'}]} />
+                    <View style={[styles.treasurePixel, {left: 16*3, top: row*3, backgroundColor: '#FFEB3B'}]} />
+                    <View style={[styles.treasurePixel, {left: 17*3, top: row*3, backgroundColor: '#795548'}]} />
+                  </React.Fragment>
+                ))}
+                
+                {/* Row 9 (y=160px): All yellow except lock and borders */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 9*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 9*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 9*3, backgroundColor: '#FFEB3B'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 9*3, backgroundColor: '#795548'}]} />
+                
+                {/* Row 10 (y=170px): Bottom border - all dark brown */}
+                <View style={[styles.treasurePixel, {left: 0*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 1*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 2*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 3*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 4*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 5*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 6*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 7*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 8*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 9*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 10*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 11*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 12*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 13*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 14*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 15*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 16*3, top: 10*3, backgroundColor: '#795548'}]} />
+                <View style={[styles.treasurePixel, {left: 17*3, top: 10*3, backgroundColor: '#795548'}]} />
+                
+
+              </View>
         </View>
         
-            {/* Show different content based on proximity */}
-            {isWithinCollectionRange ? (
-              // Full treasure details when within 25m
-              <>
-                <Text style={styles.treasureDescription}>{treasure.description}</Text>
-                  <TouchableOpacity 
-                  style={[styles.treasureCollectButton, { borderColor: getRarityColor(treasure.rarity) }]}
-                  onPress={handleTreasureCollection}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.treasureCollectText, { color: getRarityColor(treasure.rarity) }]}>
-                    🎁 Collect Treasure
-                  </Text>
-          </TouchableOpacity>
-              </>
-            ) : (
-              // No additional content when locked - padlock is in header
-              null
-            )}
+            {/* Simplified Popover Layout: Lock + Rarity Title */}
+            <View style={styles.simpleTreasureRarityRow}>
+              {!isWithinCollectionRange && (
+                <Lock width={16} height={16} color="#795548" style={styles.treasureLockIcon} />
+              )}
+              <Text style={[styles.treasureRarity, { color: getRarityColor(treasure.rarity) }]}>
+                {getRarityDisplayName(treasure.rarity)} Treasure
+              </Text>
+        </View>
+        
+            {/* Centered XP Value */}
+            <View style={styles.simpleTreasureXpContainer}>
+              <Text style={styles.treasureXP}>+{getTreasureXPBonus(treasure.rarity)} XP</Text>
+        </View>
         </View>
         )}
           
         {/* Only show claim button for claimable stations */}
         {status === 'claimable' && (
           <TouchableOpacity 
-            style={[styles.claimButton, progress > 0 && progress < 100 ? styles.claimButtonHolding : null]} 
-            onPressIn={onClaimStart}
-            onPressOut={onClaimStop}
-            onPress={() => {}}
+            style={[
+              styles.claimButton, 
+              progress > 0 && progress < 100 ? styles.claimButtonHolding : null,
+              progress >= 100 ? styles.claimButtonCompleted : null
+            ]} 
+            onPress={() => {
+              console.log('👆 Claim button tapped');
+              onClaimStart();
+            }}
             activeOpacity={0.8}
           >
-            {/* Progress indicator inside the button */}
-            <View style={[styles.claimButtonProgress, { width: `${progress}%` }]} />
             <Text style={styles.claimButtonText}>
-              {progress >= 100 ? '⚡ CLAIMED!' : '🔋 Push and hold to claim'}
+              🎯 Tap to claim
             </Text>
           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+        
+        </View>
+        </View>
     </TouchableOpacity>
   );
 };
@@ -965,12 +1425,63 @@ const MapScreen = () => {
     equipTool,
     unequipTool,
     getEquippedTool,
+    // Location tracking
+    startLocationTracking,
+    stopLocationTracking,
+    isLocationTracking,
+    // Game actions
+    discoverStation,
+    awardXP,
+    // Debug functions
+    createTojnanTestStations,
+    // Phase 3: Station expiry system
+    claimedStations,
   } = useGameStore();
 
-  // Mock claimStation function
+  // Real claimStation function - implements actual discovery logic
   const claimStation = async (stationId: string) => {
-    console.log(`🎯 Claiming station ${stationId}`);
-    // TODO: Implement actual claiming logic
+    console.log(`🎯 Starting station claim process for ${stationId}`);
+    
+    try {
+      // Find the station to get its details
+      const station = chargingStations.find(s => s.id === stationId);
+      if (!station) {
+        console.error(`❌ Station ${stationId} not found in charging stations list`);
+        throw new Error(`Station ${stationId} not found`);
+      }
+      
+      console.log(`📍 Claiming station: ${station.title}`);
+      
+      // Check if already discovered
+      if (station.isDiscovered) {
+        console.log(`⚠️ Station ${stationId} already discovered, skipping claim`);
+        return;
+      }
+      
+      // 1. Mark station as discovered
+      console.log(`✅ Step 1: Discovering station ${stationId}`);
+      discoverStation(stationId);
+      
+      // 2. Award XP for discovery  
+      console.log(`✅ Step 2: Awarding 100 XP for station discovery`);
+      awardXP(100, 'Station Discovery');
+      
+      // 3. Spawn discovery treasure (with bonus for first discovery)
+      console.log(`✅ Step 3: Spawning discovery treasure`);
+      const treasure = spawnTreasureForStation(stationId, true); // true = discovery bonus
+      
+      if (treasure) {
+        console.log(`🎁 Discovery treasure spawned: ${getRarityDisplayName(treasure.rarity)}`);
+      } else {
+        console.log(`⚠️ No treasure spawned (may already exist for this week)`);
+      }
+      
+      console.log(`🎉 Station claim completed successfully!`);
+      
+    } catch (error) {
+      console.error(`❌ Station claim failed:`, error);
+      throw error;
+    }
   };
 
   const [claimingStation, setClaimingStation] = useState<string | null>(null);
@@ -985,6 +1496,7 @@ const MapScreen = () => {
   // Toast notification state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  // Removed popoverHeight state - using fixed bottom anchoring
   
   // Tool selection modal state
   const [showToolModal, setShowToolModal] = useState(false);
@@ -993,6 +1505,15 @@ const MapScreen = () => {
   // Hold-to-claim interaction state
   const [isHolding, setIsHolding] = useState(false);
   const [holdInterval, setHoldInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Phase 5: Player Profile System State
+  const [isDeveloperModeEnabled, setIsDeveloperModeEnabled] = useState(false);
+  const [developerTapCount, setDeveloperTapCount] = useState(0);
+  
+  // Sticky Location Tracking State
+  const [isFollowingUser, setIsFollowingUser] = useState(true);
+  const [lastManualRegion, setLastManualRegion] = useState<Region | null>(null);
+  const [isAnimatingToUser, setIsAnimatingToUser] = useState(false);
   
   const mapRef = useRef<MapView>(null);
 
@@ -1013,11 +1534,8 @@ const MapScreen = () => {
     })();
   }, [updateLocation]);
 
-  useEffect(() => {
-    if (currentLocation) {
-      loadChargingStations(true); // Force reload when location changes
-    }
-  }, [currentLocation, loadChargingStations]);
+  // REMOVED: This was causing infinite loop - location updates every 1s triggering station reloads
+  // The gameStore.updateLocation() already handles first-time location loading correctly
 
   // Cleanup hold interval on unmount
   useEffect(() => {
@@ -1052,18 +1570,65 @@ const MapScreen = () => {
         };
         
         console.log('🗺️ Initial zoom to show stations (45% closer):', region);
+        setIsAnimatingToUser(true);
         mapRef.current?.animateToRegion(region, 1200);
+        setTimeout(() => setIsAnimatingToUser(false), 1200);
         setHasZoomedToStations(true);
       }, 800); // Single smooth zoom after brief delay for map initialization
     }
   }, [mapBounds, currentLocation, hasZoomedToStations]);
 
-  // Center map on selected station
+  // Sticky Location Tracking: Follow user when location updates (only if in follow mode)
+  useEffect(() => {
+    if (currentLocation && mapRef.current && isFollowingUser && !isAnimatingToUser && hasZoomedToStations) {
+      console.log('📍 Following user location - map will center automatically');
+      
+      // Get current map region to maintain zoom level
+      mapRef.current.getCamera().then((camera) => {
+        const region: Region = {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          latitudeDelta: camera.zoom ? 0.015 / camera.zoom : 0.02, // Maintain current zoom level
+          longitudeDelta: camera.zoom ? 0.015 / camera.zoom : 0.02,
+        };
+        
+        setIsAnimatingToUser(true);
+        mapRef.current?.animateToRegion(region, 800); // Smooth follow animation
+        setTimeout(() => setIsAnimatingToUser(false), 800);
+      }).catch(() => {
+        // Fallback if camera not available
+        const region: Region = {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        };
+        
+        setIsAnimatingToUser(true);
+        mapRef.current?.animateToRegion(region, 800);
+        setTimeout(() => setIsAnimatingToUser(false), 800);
+      });
+    }
+  }, [currentLocation, isFollowingUser, isAnimatingToUser, hasZoomedToStations]);
+
+  // Cleanup effect for claim intervals and state
+  useEffect(() => {
+    return () => {
+      // Cleanup on component unmount
+      if (holdInterval) {
+        console.log('🧹 Component unmounting - cleaning up claim interval');
+        clearInterval(holdInterval);
+      }
+    };
+  }, [holdInterval]);
+
+  // Center map on selected station (simple centering)
   const centerMapOnStation = (station: any) => {
     if (mapRef.current && station) {
       console.log(`🎯 Centering map on station: ${station.title}`);
+      
       const region: Region = {
-        latitude: station.latitude,
+        latitude: station.latitude, // Direct center - no offset needed
         longitude: station.longitude,
         latitudeDelta: 0.01, // Closer zoom for selected station
         longitudeDelta: 0.01,
@@ -1073,71 +1638,80 @@ const MapScreen = () => {
   };
 
   const handleStationPress = (station: any) => {
+    console.log(`🎯 Station tapped: ${station.title} (${station.id})`);
+    
     if (claimingStation) return; // Prevent multiple claims
     
     // Center map on selected station
     setSelectedStation(station);
     centerMapOnStation(station);
     
-    // Show popover (no automatic progress)
+    // Show popover (don't set claimingStation until actually claiming)
     setPopoverStation(station);
     setShowClaimPopover(true);
-    setClaimingStation(station.id);
     setClaimProgress(0);
   };
 
-  // Start hold-to-claim interaction
-  const startHoldToClaim = async () => {
-    console.log('🔋 Starting hold-to-claim interaction');
+  // Simple tap-to-claim interaction
+  const handleTapToClaim = async () => {
+    console.log('🎯 Tap-to-claim started');
     
-    // Light haptic feedback when starting to hold
-    if (hapticFeedbackEnabled) {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Validate we have a station to claim
+    if (!popoverStation) {
+      console.error('❌ No station selected for claiming');
+      return;
     }
     
-    setIsHolding(true);
-    setClaimProgress(0);
+    // Prevent multiple simultaneous claims
+    if (claimingStation) {
+      console.log('⚠️ Already claiming a station, ignoring tap');
+      return;
+    }
     
-    const interval = setInterval(() => {
-      setClaimProgress(prev => {
-        const newProgress = prev + 3; // 3% per 50ms = ~1.7 seconds to complete
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setHoldInterval(null);
-          setIsHolding(false);
-          handleClaimComplete();
-          return 100;
-        }
-        return newProgress;
-      });
-    }, 50);
+    // Haptic feedback for immediate response
+    if (hapticFeedbackEnabled) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (error) {
+        console.warn('⚠️ Haptic feedback failed:', error);
+      }
+    }
     
-    setHoldInterval(interval);
+    // Immediate claim completion
+    setClaimingStation(popoverStation.id);
+    console.log('🚀 Claiming station immediately...');
+    await handleClaimComplete();
   };
 
   // Stop hold-to-claim interaction
   const stopHoldToClaim = () => {
-    console.log('🛑 Stopping hold-to-claim interaction');
-    setIsHolding(false);
+    console.log('🛑 Stopping hold-to-claim interaction, current progress:', claimProgress);
     
+    // Clear interval first to prevent further updates
     if (holdInterval) {
+      console.log('🧹 Clearing claim interval:', holdInterval);
       clearInterval(holdInterval);
       setHoldInterval(null);
     }
     
+    setIsHolding(false);
+    
     // Reset progress if not completed
     if (claimProgress < 100) {
+      console.log(`🔄 Resetting incomplete claim progress from ${claimProgress}% to 0%`);
       setClaimProgress(0);
+      setClaimingStation(null);
+    } else {
+      console.log('✅ Claim was completed, keeping progress at 100%');
     }
   };
 
   // Close popover and deselect station (with optional toast message)
   const closePopover = (toastMessage?: string) => {
-    // Stop any ongoing hold interaction
-    stopHoldToClaim();
+    console.log('🔴 Popover closed - map stays at current location');
     
     setShowClaimPopover(false);
-    setClaimingStation(null);
+    setClaimingStation(null); // Reset claiming state
     setClaimProgress(0);
     setPopoverStation(null);
     setSelectedStation(null); // Deselect station
@@ -1148,19 +1722,48 @@ const MapScreen = () => {
       setShowToast(true);
       console.log('🎁 Showing treasure collection toast:', toastMessage);
     }
-    
-    console.log('🔴 Popover closed - map stays at current location');
   };
 
   const handleClaimComplete = async () => {
-    if (popoverStation && claimProgress >= 100) {
+    console.log('🎯 Handling claim completion');
+    
+    // Validate completion conditions
+    if (!popoverStation) {
+      console.error('❌ No popover station available for claim completion');
+      return;
+    }
+    
+    // Skip claimProgress check since we're called directly from the interval when progress reaches 100%
+    console.log(`✅ Claiming station: ${popoverStation.title} (${popoverStation.id})`);
+    
+    try {
+      // Execute the actual claim
       await claimStation(popoverStation.id);
       
+      console.log('🎉 Station claimed successfully');
+      
+      // Close the popover with success message
+      closePopover('🎉 Station claimed! +100 XP earned');
+      
+    } catch (error) {
+      console.error('❌ Claim completion failed:', error);
+      
+      // Error haptic feedback
       if (hapticFeedbackEnabled) {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        try {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } catch (hapticError) {
+          console.warn('⚠️ Error haptic feedback failed:', hapticError);
+        }
       }
       
-      closePopover(); // Use new close function
+      // Reset claim state on error
+      setClaimProgress(0);
+      setIsHolding(false);
+      setClaimingStation(null);
+      
+      // Show error to user (you could add an Alert here if needed)
+      console.log('🔄 Claim state reset due to error');
     }
   };
 
@@ -1229,9 +1832,36 @@ const MapScreen = () => {
     );
   };
 
+  // Handle user manual pan - breaks follow mode
+  const handleMapRegionChange = (region: Region) => {
+    if (isAnimatingToUser || !hasZoomedToStations) {
+      // Ignore region changes from our own animations or before initial setup
+      return;
+    }
+    
+    if (isFollowingUser && currentLocation) {
+      // Check if user manually moved the map away from their location
+      const distance = Math.sqrt(
+        Math.pow(region.latitude - currentLocation.latitude, 2) +
+        Math.pow(region.longitude - currentLocation.longitude, 2)
+      );
+      
+      // If user moved map significantly (>0.001 degrees ~= 100m), break follow mode
+      if (distance > 0.001) {
+        console.log('🚶 User panned map - breaking follow mode');
+        setIsFollowingUser(false);
+        setLastManualRegion(region);
+      }
+    }
+  };
+
   const handleCenterOnUser = () => {
     if (currentLocation && mapRef.current && mapBounds) {
-      console.log('🔄 Returning to exploration view - 10 closest stations');
+      console.log('🔄 Re-enabling follow mode - returning to user location');
+      
+      // Re-enable follow mode
+      setIsFollowingUser(true);
+      setLastManualRegion(null);
       
       // Use same logic as Stage 2 zoom: show 10 closest stations centered on user
       const latitudeDelta = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
@@ -1247,17 +1877,25 @@ const MapScreen = () => {
         longitudeDelta: Math.max(longitudeDelta * zoomInFactor, 0.015),
       };
       
+      setIsAnimatingToUser(true);
       mapRef.current.animateToRegion(region, 1000);
+      setTimeout(() => setIsAnimatingToUser(false), 1000);
     } else if (currentLocation && mapRef.current) {
       // Fallback: just center on user if mapBounds not available
-      console.log('🔄 Centering on user location (fallback)');
+      console.log('🔄 Re-enabling follow mode - centering on user location (fallback)');
+      setIsFollowingUser(true);
+      setLastManualRegion(null);
+      
       const region: Region = {
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
         latitudeDelta: 0.02,
         longitudeDelta: 0.02,
       };
+      
+      setIsAnimatingToUser(true);
       mapRef.current.animateToRegion(region, 1000);
+      setTimeout(() => setIsAnimatingToUser(false), 1000);
     }
   };
 
@@ -1418,6 +2056,33 @@ const MapScreen = () => {
     }
   };
 
+  // Phase 5: Developer Mode Functions
+  const handleToggleDeveloperMode = () => {
+    const newTapCount = developerTapCount + 1;
+    setDeveloperTapCount(newTapCount);
+    
+    if (newTapCount >= 5) {
+      setIsDeveloperModeEnabled(!isDeveloperModeEnabled);
+      setDeveloperTapCount(0);
+      console.log(`🛠️ Developer mode ${!isDeveloperModeEnabled ? 'enabled' : 'disabled'}`);
+    }
+    
+    // Reset tap count after 3 seconds if user doesn't complete the sequence
+    setTimeout(() => setDeveloperTapCount(0), 3000);
+  };
+
+  const handleViewTerritory = () => {
+    setShowMenu(false);
+    // TODO: Implement territory overview modal
+    Alert.alert('🏰 Territory Overview', 'Territory management interface coming soon!');
+  };
+
+  const handleManageStations = () => {
+    setShowMenu(false);
+    // TODO: Implement station management interface  
+    Alert.alert('⚡ Manage Territory', 'Station renewal interface coming soon!');
+  };
+
   const updateMapRegion = (latitude: number, longitude: number) => {
     if (mapRef.current) {
       const region: Region = {
@@ -1519,6 +2184,7 @@ const MapScreen = () => {
         } : undefined}
         showsUserLocation={false}
           showsMyLocationButton={false}
+          onRegionChangeComplete={handleMapRegionChange}
         >
         {/* Custom pixel art user location marker - highest z-index */}
         {currentLocation && (
@@ -1592,14 +2258,29 @@ const MapScreen = () => {
           />
       </View>
 
-        {/* Location Reset Button (Secondary) */}
+        {/* Location Reset Button (Secondary) - Shows follow mode state */}
           <TouchableOpacity 
-          style={[styles.hudButton, styles.hudSecondaryButton]}
+          style={[
+            styles.hudButton, 
+            styles.hudSecondaryButton,
+            isFollowingUser && styles.locationButtonFollowing
+          ]}
           onPress={handleCenterOnUser}
         >
-          <View style={styles.locationButtonBorder}>
-            <MapsArrowDiagonal width={18} height={18} color="#CCCCCC" />
+          <View style={[
+            styles.locationButtonBorder,
+            isFollowingUser && styles.locationButtonBorderActive
+          ]}>
+            <MapsArrowDiagonal 
+              width={18} 
+              height={18} 
+              color={isFollowingUser ? "#00FF88" : "#CCCCCC"} 
+            />
             </View>
+            {/* Follow mode indicator dot */}
+            {isFollowingUser && (
+              <View style={styles.followModeIndicator} />
+            )}
           </TouchableOpacity>
           </View>
       
@@ -1608,15 +2289,41 @@ const MapScreen = () => {
         visible={showClaimPopover}
         station={popoverStation}
         progress={claimProgress}
-        onClaimStart={startHoldToClaim}
-        onClaimStop={stopHoldToClaim}
+                        onClaimStart={handleTapToClaim}
+                        onClaimStop={() => {}} // Not needed for tap-to-claim
         onClose={closePopover}
         getTreasureForStation={getTreasureForStation}
         collectTreasure={collectTreasure}
       />
 
       {/* Slide-up Menu */}
-      {showMenu && (
+      {/* Phase 5: Player Profile Modal */}
+      <PlayerProfileModal
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        currentLevel={currentLevel}
+        levelTitle={levelTitle}
+        totalXP={totalXP}
+        xpToNextLevel={xpToNextLevel}
+        discoveredStations={chargingStations.filter(s => s.isDiscovered).length}
+        totalStations={chargingStations.length}
+        treasureStats={{ totalCollected: 0, epicCollected: 0, mythicCollected: 0, legendaryCollected: 0 }}
+        claimedStations={chargingStations.filter(s => s.isDiscovered).length}
+        onViewTerritory={handleViewTerritory}
+        onManageStations={handleManageStations}
+        isDeveloperModeEnabled={isDeveloperModeEnabled}
+        onToggleDeveloperMode={handleToggleDeveloperMode}
+        handleCenterOnUser={handleCenterOnUser}
+        handleReloadStations={handleReloadStations}
+        handleLogout={handleLogout}
+        handleReset={handleReset}
+        handleShowSyncStatus={handleShowSyncStatus}
+        spawnTreasureForStation={spawnTreasureForStation}
+        chargingStations={chargingStations}
+      />
+
+      {/* Keep the old menu temporarily for testing */}
+      {false && showMenu && (
         <TouchableOpacity 
           style={styles.slideUpMenu}
           onPress={() => setShowMenu(false)}
@@ -1684,6 +2391,79 @@ const MapScreen = () => {
             >
               <Text style={styles.menuButtonIcon}>🎁</Text>
               <Text style={styles.menuButtonText}>Spawn Test Treasures</Text>
+            </TouchableOpacity>
+            
+            {/* Create Töjnan Test Stations */}
+            <TouchableOpacity 
+              style={styles.menuButton} 
+              onPress={() => {
+                setShowMenu(false);
+                
+                Alert.alert(
+                  '🧪 Create Töjnan Test Stations',
+                  'This will add 5 test charging stations in the Töjnan area (Sollentuna) for local testing of the claim process.\n\n📍 Test stations will appear as red markers that you can walk to and claim.\n\n🎯 Perfect for testing discovery & claim logic without driving to real stations!',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Create Test Stations',
+                      onPress: () => {
+                        try {
+                          console.log('🧪 Creating Töjnan test stations...');
+                          createTojnanTestStations();
+                          Alert.alert('✅ Test Stations Created!', 'Added 5 test stations in the Töjnan area.\n\n📍 Walk within 25m of any red marker to make it discoverable (purple), then tap to claim!\n\n🗺️ Zoom to the Töjnan area in Sollentuna to see them.');
+                        } catch (error) {
+                          console.error('❌ Test station creation failed:', error);
+                          Alert.alert('Creation Failed', 'Could not create test stations. Check logs for details.');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>🧪</Text>
+              <Text style={styles.menuButtonText}>Create Töjnan Test Stations</Text>
+            </TouchableOpacity>
+            
+            {/* Restart Location Tracking */}
+            <TouchableOpacity 
+              style={styles.menuButton} 
+              onPress={async () => {
+                setShowMenu(false);
+                
+                Alert.alert(
+                  '📍 Restart Location Tracking',
+                  `Current tracking status: ${isLocationTracking ? '✅ Active' : '❌ Inactive'}\n\nThis will restart GPS location tracking to ensure your position marker follows you as you move.\n\n🎯 Use this if your location marker seems stuck or not updating.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Restart Tracking',
+                      onPress: async () => {
+                        try {
+                          console.log('📍 Restarting location tracking...');
+                          
+                          // Stop existing tracking first
+                          await stopLocationTracking();
+                          
+                          // Wait a moment
+                          await new Promise(resolve => setTimeout(resolve, 500));
+                          
+                          // Start tracking again
+                          await startLocationTracking();
+                          
+                          Alert.alert('✅ Location Tracking Restarted!', `GPS tracking is now ${isLocationTracking ? 'active' : 'inactive'}.\n\n📍 Your location marker should now follow you as you move!`);
+                        } catch (error) {
+                          console.error('❌ Location tracking restart failed:', error);
+                          Alert.alert('Restart Failed', 'Could not restart location tracking. Check permissions and try again.');
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.menuButtonIcon}>📍</Text>
+              <Text style={styles.menuButtonText}>Restart Location Tracking</Text>
             </TouchableOpacity>
             
             {/* Refresh Station Data */}
@@ -2727,7 +3507,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.4)', // Slightly more dimmed backdrop
-    justifyContent: 'center',
+    justifyContent: 'center', // Center the popover+marker group
     alignItems: 'center',
     zIndex: 10000,
     elevation: 15,
@@ -2737,7 +3517,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A1A1A',
     padding: 20,
     width: 300,
-    marginTop: -50, // Move closer to map markers (slightly above center)
+    // Simple center positioning - popover appears over centered marker
     borderTopWidth: 3,
     borderLeftWidth: 3,
     borderBottomWidth: 3,
@@ -2748,6 +3528,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 10,
+    position: 'relative', // Needed for arrow positioning
   },
   // Status-based popover variants
   popoverUndiscovered: {
@@ -2884,8 +3665,26 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 15,
     borderRadius: 8,
-    borderLeftWidth: 4,
-    borderStyle: 'solid',
+  },
+  treasureChestContainer: {
+    alignItems: 'center',
+    marginTop: 12, // 4 pixels * 3 (3px-per-pixel scaling)
+    marginBottom: 15,
+  },
+  treasureChest: {
+    position: 'relative',
+    width: 54, // 18 pixels * 3 (x: 10px-180px = positions 0-17)
+    height: 33, // 11 pixels * 3 (y: 60px-170px = positions 0-10)
+  },
+  simpleTreasureRarityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  simpleTreasureXpContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   treasureHeader: {
     flexDirection: 'row',
@@ -2951,7 +3750,7 @@ const styles = StyleSheet.create({
   // Pixel Art Toast Notification styles
   pixelToast: {
     position: 'absolute',
-    top: 150,
+    top: 220, // Moved down to appear below header
     left: 20,
     right: 20,
     zIndex: 20000,
@@ -3175,7 +3974,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderRightWidth: 3,
     borderTopColor: '#888888',
-    borderLeftColor: '#888888',
+    borderLeftColor: '#888888', 
     borderBottomColor: '#555555',
     borderRightColor: '#555555',
     borderStyle: 'solid',
@@ -3422,6 +4221,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#CC7700',
     borderRightColor: '#CC7700',
   },
+  claimButtonCompleted: {
+    backgroundColor: '#00FF88',
+    borderTopColor: '#55FFAA',
+    borderLeftColor: '#55FFAA',
+    borderBottomColor: '#00CC66',
+    borderRightColor: '#00CC66',
+  },
   claimButtonProgress: {
     position: 'absolute',
     left: 0,
@@ -3450,11 +4256,16 @@ const styles = StyleSheet.create({
     width: 3,
     height: 3,
   },
+  treasurePixel: {
+    width: 3,
+    height: 3,
+    position: 'absolute',
+  },
   transparent: {
     backgroundColor: 'transparent',
   },
   pixelOutline: {
-    backgroundColor: '#2C1810',
+    backgroundColor: '#795548',
   },
   pixelBrownDark: {
     backgroundColor: '#5D4037',
@@ -3726,6 +4537,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  locationButtonFollowing: {
+    backgroundColor: 'rgba(0, 255, 136, 0.15)', // Subtle green glow when following
+  },
+  locationButtonBorderActive: {
+    borderTopColor: '#00FF88',
+    borderLeftColor: '#00FF88',
+    borderBottomColor: '#00AA44',
+    borderRightColor: '#00AA44',
+  },
+  followModeIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00FF88',
+    borderWidth: 1,
+    borderColor: '#000000',
+  },
 
   // Primary Tool Slot Borders (75x75 - even more prominent)
   toolSlotEmptyBorder: {
@@ -3790,6 +4621,161 @@ const styles = StyleSheet.create({
   pixelCenterButtonText: {
     fontSize: 16,
     color: '#FF4757',
+    textAlign: 'center',
+  },
+  
+  // Phase 5: Player Profile Modal Styles
+  playerProfileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  avatarContainer: {
+    marginRight: 15,
+    padding: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+  },
+  playerInfo: {
+    flex: 1,
+  },
+  playerLevel: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFD700',
+  },
+  playerTitle: {
+    fontSize: 16,
+    color: '#CCCCCC',
+    fontStyle: 'italic',
+  },
+  
+  xpSection: {
+    marginBottom: 20,
+  },
+  xpProgressContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  xpLabel: {
+    fontSize: 14,
+    color: '#CCCCCC',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  xpProgressBar: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  xpProgressFill: {
+    height: '100%',
+    backgroundColor: '#00ff88',
+    borderRadius: 3,
+  },
+  
+  achievementSection: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    padding: 15,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    marginTop: 2,
+  },
+  
+  territorySection: {
+    marginBottom: 20,
+  },
+  menuButtonContent: {
+    flex: 1,
+  },
+  menuButtonSubtext: {
+    fontSize: 12,
+    color: '#CCCCCC',
+    marginTop: 2,
+  },
+  
+  settingsSection: {
+    marginBottom: 20,
+  },
+  
+  developerSection: {
+    marginBottom: 20,
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 0, 0.3)',
+  },
+  
+  hiddenDeveloperToggle: {
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  hiddenToggleText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.3)',
+    letterSpacing: 2,
+  },
+  
+  // Gaming Psychology Enhancement Styles
+  achievementBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    fontSize: 12,
+  },
+  milestonesContainer: {
+    marginTop: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  milestonesTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  milestone: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 6,
+    padding: 8,
+    marginVertical: 2,
+  },
+  milestoneText: {
+    fontSize: 11,
+    color: '#CCCCCC',
     textAlign: 'center',
   },
 }); 

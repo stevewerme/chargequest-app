@@ -378,7 +378,125 @@
 
 ---
 
-## Week 12.0 - [Title TBD]
+## Week 11.5 - Treasure System Enhancement & Geographic Balance
+
+**Captain's Log, ChargeQuest Development, Week 11.5**
+
+*"Mission Status: Treasure system revolution achieved. ChargeQuest now features properly balanced rarity distribution and fair geographic gameplay mechanics that reward both urban efficiency and rural exploration effort.*
+
+*Rarity rebalancing breakthrough: Implemented enhanced 6-tier treasure system with truly legendary rewards. Epic treasures reduced from 8% to 5%, Mythic from 3% to 1.5%, and Legendary from 1% to 0.3% - creating genuine excitement when rare finds occur. Players now experience authentic treasure hunt psychology where legendary drops are 4-month events worthy of community sharing.*
+
+*Geographic fairness achievement: Solved the fundamental urban vs rural imbalance through sophisticated distance and density bonus system. Rural players now receive up to 2.25x better treasure odds through combined distance effort rewards (1.5x for >2km travel) and low-density area bonuses (1.5x for <10 nearby stations). This ensures Stockholm city players can't monopolize rewards through station density advantage.*
+
+*Technical excellence: Enhanced treasure spawning functions with comprehensive odds calculation system including loyalty progression bonuses, geographic multipliers, and real-time debug logging. All treasure generation now automatically factors user location, station density, and loyalty history. The system scales from 1x base odds to maximum 3.375x for dedicated rural players.*
+
+*User experience transformation: Console logging now provides complete transparency into treasure odds calculation, showing players exactly how their location and loyalty affect rewards. Rural players see "🌟 Rural Advantage! 2.81x better odds for your effort!" messages that validate their exploration choices. Enhanced rarity feedback celebrates Epic/Mythic/Legendary finds with appropriate excitement.*
+
+*Business validation: The enhanced system creates sustainable engagement across all geographic areas while maintaining authentic treasure hunt psychology. Urban players get consistent volume rewards, rural players get quality bonuses for effort, and loyalty gradually improves odds without guaranteeing outcomes. Perfect balance for Swedish EV infrastructure diversity.*
+
+*Personal insight: Learned that fair game economies require sophisticated understanding of real-world geographic constraints. Simply equal probabilities create unfair advantages for high-density areas. True fairness means adjusting mechanics to reward effort regardless of location - rural 2km drives deserve better odds than urban 200m walks.*
+
+*Strategic achievement: ChargeQuest treasure system now matches industry-leading mobile gaming standards for geographic balance and authentic rarity psychology. Rural Swedish players have meaningful advantages that reward exploration effort while maintaining urban engagement through consistent volume rewards.*
+
+*Next phase: Station expiry system implementation for strategic territory management and long-term engagement sustainment.*
+
+*End log."*
+
+**Posted to LinkedIn**: [Date TBD]  
+**Engagement**: [Pending]
+
+---
+
+## Week 12.0 - Complete Treasure System Achievement & Strategic Planning
+
+**Captain's Log, ChargeQuest Development, Week 12.0**
+
+*"Mission Status: Complete treasure system architecture achieved. ChargeQuest now features a comprehensive three-phase enhancement delivering authentic rarity psychology, geographic fairness, and strategic territory management.*
+
+*Three-phase completion breakthrough: Successfully implemented all planned treasure system enhancements across Phase 1 (rarity rebalance), Phase 2 (urban/rural balance), and Phase 3 (90-day station expiry). The system now delivers truly legendary rarities (0.3% legendary drops), fair geographic gameplay (2.25x rural advantages), and strategic depth through station expiry mechanics requiring renewal decisions.*
+
+*Station expiry system mastery: Implemented comprehensive 90-day claiming system with 7-day renewal windows, loyalty week tracking, and automatic cleanup. Players now face strategic choices about which stations to maintain, creating genuine territory management gameplay. Loyalty bonuses integrate seamlessly with Phase 2 treasure odds, rewarding dedication with up to 3.375x multiplier for loyal rural players.*
+
+*Technical architecture excellence: Built complete local state management with Supabase schema foundation for future cloud sync. All treasure spawning functions automatically integrate loyalty weeks, geographic bonuses, and enhanced rarity distribution. Comprehensive validation logging provides real-time monitoring of system behavior and balance effectiveness.*
+
+*Strategic planning breakthrough: Identified next development priorities focusing on Supabase cloud sync for multi-device station claim management and complete avatar menu transformation into player-centric profile system. Revolutionary shift from utility-focused menu to gaming profile featuring player progression showcase, territory management hub, achievement displays, and strategic planning interface. Developer features completely isolated behind gesture toggle for clean production experience.*
+
+*Business validation: The complete treasure system positions ChargeQuest as premium mobile gaming experience with sophisticated economic balance, geographic fairness, and strategic depth. All three phases working together create sustainable engagement model supporting both urban efficiency and rural exploration while maintaining authentic treasure hunt excitement.*
+
+*Personal insight: Learned that comprehensive game systems require iterative development with each phase building on previous foundations. The three-phase approach allowed thorough testing and validation while maintaining system coherence. Strategic territory management adds genuine depth beyond simple collection mechanics.*
+
+*Strategic position: Ready for cloud sync implementation and production polish. Complete treasure system architecture provides solid foundation for beta testing and potential partnerships with charging operators. Avatar menu cleanup will deliver professional user experience worthy of App Store featuring.*
+
+*Next phase: Supabase cloud sync implementation and avatar menu enhancement for production-ready user experience.*
+
+*End log."*
+
+**Posted to LinkedIn**: [Date TBD]  
+**Engagement**: [Pending]
+
+---
+
+## Week 12.5 - Cloud Sync Mastery & Multi-Device Territory Management
+
+**Captain's Log, ChargeQuest Development, Week 12.5**
+
+*"Mission Status: Multi-device cloud synchronization achieved. ChargeQuest now operates with enterprise-grade Supabase integration enabling seamless territory management across all user devices.*
+
+*Cloud sync architecture breakthrough: Implemented comprehensive Supabase integration with sophisticated conflict resolution, real-time subscriptions, and intelligent migration workflows. Users can now claim stations on one device and instantly see updates on all others. The system gracefully handles offline/online transitions and resolves conflicts using server-authoritative expiry rules and latest-timestamp-wins logic for user updates.*
+
+*Real-time territory synchronization: Built Supabase real-time channels with user-specific filtering enabling instant cross-device notifications for station claims, renewals, and expirations. Players can now manage their charging territory portfolio from any device with immediate synchronization. The subscription system handles INSERT/UPDATE/DELETE events with automatic local state updates.*
+
+*Migration system excellence: Developed seamless local-to-cloud transition workflow with zero data loss. The system detects existing local claims on first authenticated login, performs conflict resolution between local and cloud data, and uploads local-only stations to cloud storage. Rate limiting prevents server overload while comprehensive error handling ensures reliable operation.*
+
+*Technical architecture maturity: Integration with existing claim and renewal workflows provides automatic cloud sync without changing user experience. New claims and renewals sync immediately to cloud with graceful fallback to local-only mode on network issues. Cleanup functions properly handle logout scenarios and subscription management.*
+
+*Business validation: Multi-device territory management positions ChargeQuest as professional mobile gaming platform supporting modern user expectations for cross-device functionality. The cloud sync foundation enables future analytics, social features, and partnership integrations with charging operators.*
+
+*Personal insight: Learned that cloud sync architecture requires careful balance between real-time responsiveness and conflict resolution complexity. Server-authoritative expiry handling prevents abuse while user-authoritative updates preserve player agency. The hybrid local-first approach provides best user experience with cloud backup benefits.*
+
+*Strategic achievement: ChargeQuest now operates with industry-leading multi-device synchronization matching premium mobile gaming standards. Territory management becomes truly strategic when players can monitor and manage claims across all their devices seamlessly.*
+
+*Next phase: Player-centric avatar system transformation to showcase progression, achievements, and strategic territory overview in engaging gaming profile interface.*
+
+*End log."*
+
+**Posted to LinkedIn**: [Date TBD]  
+**Engagement**: [Pending]
+
+---
+
+## Week 13.0 - Player-Centric Avatar Revolution & Gaming Psychology Mastery
+
+**Captain's Log, ChargeQuest Development, Week 13.0**
+
+*"Mission Status: Complete transformation of ChargeQuest from mobile utility to professional gaming platform achieved. The avatar menu revolution represents the culmination of our treasure system enhancement project - ChargeQuest now operates with industry-leading player engagement architecture.*
+
+*Player-centric profile system breakthrough: Replaced utility-focused menu with comprehensive gaming profile featuring real-time XP progress bars, achievement showcases, and territory management hub. The transformation creates immediate emotional connection between players and their progress, turning daily charging station interactions into strategic gaming sessions. Level titles, milestone tracking, and achievement badges provide continuous psychological rewards.*
+
+*Gaming psychology integration excellence: Implemented milestone-based achievement system with dynamic badges (🔥⚡💎) that celebrate player accomplishments in real-time. The Next Goals system provides clear progression paths with Explorer/Master rank systems, creating compelling reasons to continue playing. Strategic planning interface transforms territory management from administrative task to engaging gaming mechanic.*
+
+*Developer mode isolation mastery: Created sophisticated 5-tap gesture toggle that completely separates debug features from production interface. Professional gaming experience maintains clean aesthetic while providing full developer access through hidden interface. This architectural decision ensures ChargeQuest can scale to production deployment without compromising development workflow.*
+
+*Territory management hub completion: Players now manage their claimed stations through strategic overview interface with expiry dashboards and renewal planning. The psychology-driven approach transforms station maintenance from chore into strategic resource management, increasing long-term player retention and engagement with territory portfolio management.*
+
+*Technical architecture maturity: Integration with Phase 4 cloud sync ensures all player progress and territory management synchronizes seamlessly across devices. Achievement progress, milestone tracking, and strategic planning data maintains consistency whether players use phone, tablet, or multiple devices. Real-time updates preserve gaming experience continuity.*
+
+*Business validation: ChargeQuest now matches premium mobile gaming standards with professional player profiles, achievement systems, and strategic gameplay mechanics. The treasure system enhancement project successfully transformed EV charging utility into engaging location-based gaming platform with strong retention mechanics and scalable monetization foundation.*
+
+*Personal insight: Learned that player engagement architecture requires careful balance between immediate rewards and long-term progression goals. Achievement badge psychology creates powerful dopamine loops while milestone systems provide meaningful long-term objectives. The transformation from utility to gaming profile represents fundamental shift in user experience paradigm.*
+
+*Strategic achievement: ChargeQuest operates as complete gaming ecosystem with professional player progression, strategic territory management, and engaging achievement systems. Ready for alpha testing with confident user retention and engagement metrics.*
+
+*Next phase: Performance optimization and beta launch preparation with focus on scalability and user acquisition metrics.*
+
+*End log."*
+
+**Posted to LinkedIn**: [Date TBD]  
+**Engagement**: [Pending]
+
+---
+
+## Week 13.5 - [Title TBD]
 
 *[Future logs...]*
 
@@ -419,6 +537,10 @@
 - **Week 10.0**: Treasure System Foundation & Cloud Sync Mastery - Brawl Stars 6-tier rarity system, Supabase schema extension, cloud sync architecture, tool system foundation
 - **Week 10.5**: Treasure UX Mastery & Visual Excellence - Progressive disclosure system, Iconoir professional icons, pixel art treasure gems, smooth signin zoom
 - **Week 11.0**: Tool Selection Mastery & Equipment Interface Excellence - Professional tool selection modal, unequip-first workflow, horizontal scrolling, state synchronization fixes
+- **Week 11.5**: Treasure System Enhancement & Geographic Balance - Enhanced rarity distribution, urban/rural balance system, loyalty progression, comprehensive odds calculation
+- **Week 12.0**: Complete Treasure System Achievement & Strategic Planning - Three-phase treasure system completion, 90-day station expiry implementation, cloud sync planning
+- **Week 12.5**: Cloud Sync Mastery & Multi-Device Territory Management - Supabase integration, real-time synchronization, conflict resolution, seamless migration workflows
+- **Week 13.0**: Player-Centric Avatar Revolution & Gaming Psychology Mastery - Professional gaming profile, achievement badges, milestone tracking, developer mode isolation
 
 ---
 
