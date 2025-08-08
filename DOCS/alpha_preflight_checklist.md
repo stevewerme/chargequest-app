@@ -9,9 +9,9 @@ This document lists the minimal, practical steps to prepare a stable 10-user alp
 - [ ] Basic release notes (what to test, known limits)
 
 ## 2) Crash & Telemetry
-- [ ] Add crash reporting (e.g., Sentry) – DSN via env, minimal setup
-- [ ] Add lightweight analytics (screen opens, claim success/failure, treasure collected)
-- [ ] Verify logs redact PII (location not sent in analytics)
+- [x] Add crash reporting fallback (ErrorBoundary posting minimal event)
+- [x] Add lightweight analytics (app_open, claim_started/succeeded, treasure_spawned/collected)
+- [x] Verify payload pruning on server (no precise GPS in analytics)
 
 ## 3) Permissions & Privacy
 - [ ] iOS Info.plist strings verified for foreground location
@@ -47,8 +47,8 @@ This document lists the minimal, practical steps to prepare a stable 10-user alp
 - [ ] Test in city and lower-density area (observe rural multiplier logs)
 
 ## 9) Support & QA
-- [ ] In-app “Report a bug” link (mailto or simple form)
-- [ ] Version/build visible somewhere (settings/profile)
+- [x] In-app “Report a bug” link (mailto)
+- [x] Version/build visible in Developer section
 - [ ] 10-minute QA script prepared (first-launch → claim → collect → reset → logout)
 
 ## 10) Go/No-Go
