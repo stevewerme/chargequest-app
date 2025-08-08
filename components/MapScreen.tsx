@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Animated, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Animated, ScrollView, Linking } from 'react-native';
 import { trackEvent } from '../services/analytics';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { MapsArrowDiagonal, User, Lock, Antenna, Search, Eye, Settings, Trophy, Crown, Star, MapPin, Clock, Home, Settings as SettingsIcon } from 'iconoir-react-native';
@@ -576,6 +576,10 @@ const PlayerProfileModal = ({
             <View style={styles.playerInfo}>
               <Text style={styles.playerLevel}>Level {currentLevel}</Text>
               <Text style={styles.playerTitle}>{levelTitle}</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('mailto:support@chargequest.app?subject=ChargeQuest%20Alpha%20Bug%20Report')}
+                style={{ marginTop: 6 }}>
+                <Text style={{ color: '#00E5FF', textDecorationLine: 'underline' }}>Report a bug</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -713,6 +717,7 @@ const PlayerProfileModal = ({
           {isDeveloperModeEnabled && (
             <View style={styles.developerSection}>
               <Text style={styles.sectionTitle}>🛠️ DEVELOPER</Text>
+              <Text style={[styles.statLabel, { marginBottom: 8 }]}>App v{require('../app.json').expo.version}</Text>
               
               <TouchableOpacity 
                 style={styles.menuButton}
