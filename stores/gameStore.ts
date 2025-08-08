@@ -1843,6 +1843,16 @@ export const useGameStore = create<GameState>()(
         });
         
         console.log(`🎁 Spawned ${getRarityDisplayName(treasure.rarity)} treasure for station ${stationId}${isDiscoveryBonus ? ' (Discovery Bonus!)' : ''}`);
+        try {
+          // Dynamic import to avoid any potential cycles
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { trackEvent } = require('../services/analytics');
+          trackEvent('treasure_spawned', {
+            station_id: stationId,
+            rarity: treasure.rarity,
+            discovery_bonus: !!isDiscoveryBonus,
+          });
+        } catch {}
         return treasure;
       },
 
@@ -1896,6 +1906,16 @@ export const useGameStore = create<GameState>()(
         if (xpBonus > 0) {
           awardXP(xpBonus, `Collected ${getRarityDisplayName(treasure.rarity)} treasure: ${treasure.description}`);
         }
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { trackEvent } = require('../services/analytics');
+          trackEvent('treasure_collected', {
+            treasure_id: treasureId,
+            station_id: treasure.stationId,
+            rarity: treasure.rarity,
+            xp: xpBonus,
+          });
+        } catch {}
         
         console.log(`🎉 Collected ${getRarityDisplayName(treasure.rarity)} treasure: ${treasure.description} (+${xpBonus} XP)`);
         

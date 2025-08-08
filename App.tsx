@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 import { useEffect } from 'react';
+import { trackEvent } from './services/analytics';
 import MapScreen from './components/MapScreen';
 import AuthScreen from './components/AuthScreen';
 import { useGameStore } from './stores/gameStore';
@@ -17,6 +18,8 @@ export default function App() {
     // Initialize Supabase and permissions on app start
     initializeSupabase();
     initializePermissions();
+    // Minimal analytics: app_open
+    trackEvent('app_open').catch(() => {});
   }, []);
 
   return (

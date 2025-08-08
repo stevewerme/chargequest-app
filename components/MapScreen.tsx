@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions, Animated, ScrollView } from 'react-native';
+import { trackEvent } from '../services/analytics';
 import MapView, { Marker, Region } from 'react-native-maps';
 import { MapsArrowDiagonal, User, Lock, Antenna, Search, Eye, Settings, Trophy, Crown, Star, MapPin, Clock, Home, Settings as SettingsIcon } from 'iconoir-react-native';
 import * as Location from 'expo-location';
@@ -1655,6 +1656,9 @@ const MapScreen = () => {
   // Simple tap-to-claim interaction
   const handleTapToClaim = async () => {
     console.log('🎯 Tap-to-claim started');
+    if (popoverStation?.id) {
+      try { await trackEvent('claim_started', { station_id: popoverStation.id }); } catch {}
+    }
     
     // Validate we have a station to claim
     if (!popoverStation) {
@@ -1739,6 +1743,7 @@ const MapScreen = () => {
     try {
       // Execute the actual claim
       await claimStation(popoverStation.id);
+      try { await trackEvent('claim_succeeded', { station_id: popoverStation.id }); } catch {}
       
       console.log('🎉 Station claimed successfully');
       
