@@ -1588,34 +1588,47 @@ const MapScreen = () => {
   useEffect(() => {
     if (currentLocation && mapRef.current && isFollowingUser && !isAnimatingToUser && hasZoomedToStations) {
       console.log('📍 Following user location - map will center automatically');
-      
-      // Get current map region to maintain zoom level
-      mapRef.current.getCamera().then((camera) => {
-        const region: Region = {
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          latitudeDelta: camera.zoom ? 0.015 / camera.zoom : 0.02, // Maintain current zoom level
-          longitudeDelta: camera.zoom ? 0.015 / camera.zoom : 0.02,
-        };
-        
-        setIsAnimatingToUser(true);
-        mapRef.current?.animateToRegion(region, 800); // Smooth follow animation
-        setTimeout(() => setIsAnimatingToUser(false), 800);
-      }).catch(() => {
-        // Fallback if camera not available
-        const region: Region = {
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        };
-        
-        setIsAnimatingToUser(true);
-        mapRef.current?.animateToRegion(region, 800);
-        setTimeout(() => setIsAnimatingToUser(false), 800);
-      });
+
+      // Preserve current zoom using camera API instead of estimating deltas
+      mapRef.current.getCamera()
+        .then((camera: any) => {
+          setIsAnimatingToUser(true);
+          if (mapRef.current?.animateCamera) {
+            mapRef.current.animateCamera(
+              {
+                center: {
+                  latitude: currentLocation.latitude,
+                  longitude: currentLocation.longitude,
+                },
+                zoom: camera?.zoom,
+              },
+              { duration: 800 }
+            );
+          } else {
+            // Fallback for platforms without animateCamera
+            const region: Region = {
+              latitude: currentLocation.latitude,
+              longitude: currentLocation.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            };
+            mapRef.current?.animateToRegion(region, 800);
+          }
+          setTimeout(() => setIsAnimatingToUser(false), 800);
+        })
+        .catch(() => {
+          const region: Region = {
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          };
+          setIsAnimatingToUser(true);
+          mapRef.current?.animateToRegion(region, 800);
+          setTimeout(() => setIsAnimatingToUser(false), 800);
+        });
     }
-  }, [currentLocation, isFollowingUser, isAnimatingToUser, hasZoomedToStations]);
+  }, [currentLocation, isFollowingUser, hasZoomedToStations]);
 
   // Cleanup effect for claim intervals and state
   useEffect(() => {
