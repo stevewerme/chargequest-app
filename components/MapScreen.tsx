@@ -1558,12 +1558,16 @@ const MapScreen = () => {
 
   // Single-stage zoom: Directly to optimal view showing 10 closest stations
   const [hasZoomedToStations, setHasZoomedToStations] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // Direct zoom to show 10 closest stations (no intermediate close zoom)
   useEffect(() => {
-    if (mapBounds && mapRef.current && currentLocation && !hasZoomedToStations) {
+    if (mapBounds && mapRef.current && currentLocation && isMapReady && !hasZoomedToStations) {
       console.log('🗺️ Setting initial zoom to show 10 closest stations');
       
+      const previousFollow = isFollowingUser;
+      if (previousFollow) setIsFollowingUser(false);
+
       setTimeout(() => {
         // Use calculated bounds but keep user as center
         const latitudeDelta = Math.abs(mapBounds.northeast.latitude - mapBounds.southwest.latitude);
@@ -1582,11 +1586,14 @@ const MapScreen = () => {
         console.log('🗺️ Initial zoom to show stations (45% closer):', region);
         setIsAnimatingToUser(true);
         mapRef.current?.animateToRegion(region, 1200);
-        setTimeout(() => setIsAnimatingToUser(false), 1200);
-        setHasZoomedToStations(true);
-      }, 800); // Single smooth zoom after brief delay for map initialization
+        setTimeout(() => {
+          setIsAnimatingToUser(false);
+          setHasZoomedToStations(true);
+          setIsFollowingUser(previousFollow);
+        }, 1200);
+      }, 400); // brief delay for map readiness
     }
-  }, [mapBounds, currentLocation, hasZoomedToStations]);
+  }, [mapBounds, currentLocation, isMapReady, hasZoomedToStations]);
 
   // Sticky Location Tracking: Follow user when location updates (only if in follow mode)
   useEffect(() => {
@@ -2211,6 +2218,7 @@ const MapScreen = () => {
         } : undefined}
         showsUserLocation={false}
           showsMyLocationButton={false}
+          onMapReady={() => setIsMapReady(true)}
           onRegionChangeComplete={handleMapRegionChange}
         >
         {/* Custom pixel art user location marker - highest z-index */}
