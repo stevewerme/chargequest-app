@@ -564,7 +564,7 @@ const PlayerProfileModal = ({
       {/* Backdrop that closes the modal when tapped outside */}
       <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={onClose} />
 
-      <View style={[styles.menuModal, { maxHeight: '85%' }]} pointerEvents="auto">
+      <View style={[styles.menuModal, { maxHeight: '92%' }]} pointerEvents="auto">
         <ScrollView
           style={styles.menuContent}
           showsVerticalScrollIndicator={false}
@@ -3500,7 +3500,9 @@ const styles = StyleSheet.create({
     borderRightColor: '#333333',
     borderStyle: 'solid',
     paddingTop: 20,
-    maxHeight: '80%',
+    maxHeight: '92%',
+    marginHorizontal: 16,
+    marginBottom: 16,
     zIndex: 1501,
   },
   menuContent: {
