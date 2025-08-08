@@ -56,6 +56,53 @@ This document lists the minimal, practical steps to prepare a stable 10-user alp
 - [ ] Acceptable battery usage with adaptive GPS
 - [ ] Claims, treasures, and sync operate reliably
 
+## 11) Analytics Backend & Lovable Dashboard
+
+Backend (Supabase)
+- [ ] Create table `events` with minimal PII
+  - `id uuid default gen_random_uuid() primary key`
+  - `user_id uuid null` (when signed-in)
+  - `device_id text not null` (hashed stable ID)
+  - `session_id text not null`
+  - `app_version text not null`
+  - `platform text not null` (ios/android)
+  - `type text not null` (e.g., app_open, claim_started, claim_succeeded, treasure_spawned, treasure_collected, error)
+  - `payload jsonb not null default '{}'::jsonb` (no precise GPS; optional rarity, station_id)
+  - `created_at timestamptz default now()`
+- [ ] Indexes: `created_at`, `type`, `(type, created_at)`
+- [ ] RLS: disable direct client writes; prefer Edge Function for inserts
+- [ ] Edge Function POST `/events`
+  - Validates `type`, prunes payload keys, rate-limits per `device_id`
+  - Writes batch or single events to `events`
+  - Auth: shared bearer token via header (stored as env/secret on clients)
+- [ ] Edge Function GET `/metrics/*`
+  - `/metrics/summary?range=24h|7d` → totals: app_open, claims started/succeeded, success rate, treasures by rarity
+  - `/metrics/timeseries?event=claim_succeeded&interval=hour&range=24h`
+  - `/events?type=error&limit=100` (debug only, guarded)
+  - Auth: dashboard token (not service key) via header
+- [ ] Data retention policy: keep 60 days; scheduled job to prune
+- [ ] Privacy: no precise location; if needed, only coarse geohash (5+) or omit entirely
+
+App instrumentation
+- [ ] Add minimal event poster with retry + backoff
+  - `app_open` (on launch)
+  - `claim_started`, `claim_succeeded` (include station_id, but no coordinates)
+  - `treasure_spawned` (rarity), `treasure_collected` (rarity)
+  - `error` (category + code only)
+- [ ] Include `app_version`, `platform`, `session_id`, `device_id (hashed)`
+- [ ] Configure `EVENTS_API_URL` and `EVENTS_API_TOKEN` via env
+
+Lovable dashboard
+- [ ] Build simple web UI in Lovable consuming `/metrics/*`
+- [ ] Views: Summary KPIs, Time series (claims, actives), Rarity distribution, Error feed
+- [ ] Filters: Date range, Platform, App version
+- [ ] Protect with dashboard token; store secrets in Lovable project settings
+
+QA for analytics
+- [ ] Verify events appear in `events` within seconds
+- [ ] Check rate limiting works (spam protection)
+- [ ] Confirm dashboard renders KPIs and time series correctly
+
 Notes
 - Keep Dev tools behind gesture (already implemented)
 - Monitor console logs for: cache hits, GPS mode, distribution totals
