@@ -560,11 +560,11 @@ const PlayerProfileModal = ({
   const lifetimeEpicPlus = treasureStats.epicCollected + treasureStats.mythicCollected + treasureStats.legendaryCollected;
 
   return (
-    <View style={styles.slideUpMenu}>
+    <View style={styles.slideUpMenu} pointerEvents="box-none">
       {/* Backdrop that closes the modal when tapped outside */}
       <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={onClose} />
 
-      <View style={[styles.menuModal, { maxHeight: '85%' }]}>
+      <View style={[styles.menuModal, { maxHeight: '85%' }]} pointerEvents="auto">
         <ScrollView
           style={styles.menuContent}
           showsVerticalScrollIndicator={false}
@@ -3493,6 +3493,7 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     paddingTop: 20,
     maxHeight: '80%',
+    zIndex: 1501,
   },
   menuContent: {
     paddingHorizontal: 20,
