@@ -1,5 +1,40 @@
 # ChargeQuest Treasure System Enhancement Project
 
+## Phase 6: Performance & Alpha Readiness (10-user closed test)
+
+Status: ✅ COMPLETED
+
+Summary of improvements implemented to support a stable alpha:
+
+- Smart Location Tracking
+  - Adaptive polling (moving: 10s, stationary: 30s)
+  - GPS noise filtering and small-movement throttling
+  - Battery drain significantly reduced while preserving responsiveness
+
+- Station Data Caching
+  - 5-minute cache with 1km location-change threshold
+  - Cache-aware logging (hit/miss, cache age, location change)
+  - Persisted cache with robust date deserialization on rehydrate
+
+- Sticky Map Follow UX
+  - Follow-on-start; user pan breaks follow automatically
+  - One-tap reset re-enables follow and recenters on user
+  - Visual state on the location button (follow vs free-pan)
+
+- Reliability & Stability
+  - Fixed treasure distribution totals (exactly 1000)
+  - Fixed cache date serialization crash
+  - Safer date handling across persisted and cloud-synced entities
+
+What this unlocks
+
+- Confident 10-user alpha with predictable performance, minimized battery usage, and stable onboarding.
+- Clear, testable behavior for map, location, and station data flows.
+
+See also
+
+- `DOCS/alpha_preflight_checklist.md` for the operational checklist to commence the alpha.
+
 ## Overview
 
 This project enhances ChargeQuest's treasure system with improved rarity balance, urban/rural fairness, and station expiry mechanics to create a more engaging and balanced treasure hunting experience.

@@ -496,9 +496,21 @@
 
 ---
 
-## Week 13.5 - [Title TBD]
+## Week 13.5 - Alpha Readiness & Performance Hardening
 
-*[Future logs...]*
+**Captain's Log, ChargeQuest Development, Week 13.5**
+
+*"Mission Status: Alpha-ready. We completed a targeted performance pass and implemented professional navigation UX to support a stable 10-user closed alpha."*
+
+*Performance triumphs: Implemented adaptive GPS tracking (10s moving / 30s stationary), GPS noise filtering, and time-based throttling. Added station data caching with 5-minute TTL and 1km invalidation threshold, including cache analytics logs (age, location delta).* 
+
+*Map UX breakthrough: Implemented sticky follow behavior (follows by default), automatic break-away on user pan, and one-tap reset to re-lock following with smooth animations. Visual state on the location control indicates follow vs. free-pan.*
+
+*Reliability hardening: Fixed treasure probability totals to exactly 1000 and enhanced validation logs. Resolved JSON date serialization issues by restoring dates on rehydrate and guarding date operations across the store. Added robust logging for cloud sync init and real-time subscription lifecycle. Station loading stabilized with safe cache checks.*
+
+*Strategic position: Ready to invite ~10 alpha users post-preflight checklist. Core loop is solid, performance acceptable for extended sessions, and crash vectors closed. Next: instrumentation (crash + analytics), TestFlight distribution, and RLS double-checks.*
+
+*End log.*
 
 ---
 
