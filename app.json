@@ -2,7 +2,7 @@
   "expo": {
     "name": "ChargeQuest",
     "slug": "chargequest-app",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -14,9 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "ChargeQuest needs location access to detect when you're near charging stations and unlock them on your treasure hunt map.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "ChargeQuest needs location access to detect when you're near charging stations and unlock them on your treasure hunt map, even when the app is in the background."
+        
       },
       "bundleIdentifier": "com.anonymous.chargequest-app"
     },
@@ -28,8 +29,7 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION"
+        "ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
